@@ -1,0 +1,303 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum ContentType {
+  VIDEO
+  PDF
+  DOCUMENT
+  LINK
+  TEXT
+}
+
+enum AssessmentType {
+  QUIZ
+  ASSIGNMENT
+  EXAM
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+  LATE
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  firstName      String
+  lastName       String
+  role           Role     @default(STUDENT)
+  profileImage   String?
+  department     String   @default("Software Engineering")
+  level          Int?     // 100, 200, 300, 400 (for students)
+  matricNumber   String?  @unique // for students
+  staffId        String?  @unique // for lecturers
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  coursesTeaching  Course[]          @relation("CourseInstructor")
+  enrollments      Enrollment[]
+  submissions      Submission[]
+  grades           Grade[]
+  forumPosts       ForumPost[]
+  forumReplies     ForumReply[]
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g., "SWE 401"
+  title       String
+  description String
+  semester    String   // "First" or "Second"
+  level       Int      // 100, 200, 300, 400
+  unit        Int      @default(3)
+  isPublished Boolean  @default(false)
+  thumbnail   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  instructorId String
+  instructor   User         @relation("CourseInstructor", fields: [instructorId], references: [id])
+  modules      Module[]
+  enrollments  Enrollment[]
+  assessments  Assessment[]
+  forumPosts   ForumPost[]
+  announcements Announcement[]
+
+  @@map("courses")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  contents    Content[]
+  createdAt   DateTime @default(now())
+
+  @@map("modules")
+}
+
+model Content {
+  id        String      @id @default(cuid())
+  title     String
+  type      ContentType
+  url       String?     // file URL or video embed URL
+  body      String?     // for text content
+  duration  Int?        // in minutes, for videos
+  order     Int
+  moduleId  String
+  module    Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress  ContentProgress[]
+  createdAt DateTime    @default(now())
+
+  @@map("contents")
+}
+
+model ContentProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  contentId  String
+  completed  Boolean  @default(false)
+  timeSpent  Int      @default(0) // seconds
+  lastAccessed DateTime @default(now())
+  content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@map("content_progress")
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  enrolledAt DateTime @default(now())
+  progress   Float    @default(0) // 0-100 percentage
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Assessment {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  type        AssessmentType
+  courseId    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  totalMarks  Int
+  passMark    Int            @default(40)
+  duration    Int?           // in minutes, for quizzes
+  dueDate     DateTime?
+  isPublished Boolean        @default(false)
+  questions   Question[]
+  submissions Submission[]
+  createdAt   DateTime       @default(now())
+
+  @@map("assessments")
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  text         String
+  type         QuestionType
+  options      Json?        // ["Option A", "Option B", ...] for MCQ
+  correctAnswer String
+  marks        Int          @default(1)
+  order        Int
+  assessmentId String
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers      Answer[]
+
+  @@map("questions")
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  userId       String
+  assessmentId String
+  status       SubmissionStatus @default(PENDING)
+  fileUrl      String?          // for assignment submissions
+  score        Float?
+  feedback     String?
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers    Answer[]
+
+  @@unique([userId, assessmentId])
+  @@map("submissions")
+}
+
+model Answer {
+  id           String     @id @default(cuid())
+  submissionId String
+  questionId   String
+  answer       String
+  isCorrect    Boolean?
+  marksAwarded Float?
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, questionId])
+  @@map("answers")
+}
+
+model Grade {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  ca1       Float?   // Continuous Assessment 1
+  ca2       Float?   // Continuous Assessment 2
+  exam      Float?
+  total     Float?
+  grade     String?  // A, B, C, D, E, F
+  gradePoint Float?  // 5.0, 4.0, etc.
+  semester  String
+  session   String   // "2024/2025"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("grades")
+}
+
+model ForumPost {
+  id        String       @id @default(cuid())
+  title     String
+  body      String
+  isPinned  Boolean      @default(false)
+  courseId  String
+  authorId  String
+  course    Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author    User         @relation(fields: [authorId], references: [id])
+  replies   ForumReply[]
+  likes     Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("forum_posts")
+}
+
+model ForumReply {
+  id        String   @id @default(cuid())
+  body      String
+  postId    String
+  authorId  String
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+  likes     Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@map("forum_replies")
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("announcements")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "LOGIN", "VIEW_COURSE", "SUBMIT_QUIZ", etc.
+  metadata  Json?    // { courseId: "...", duration: 300 }
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
+}
