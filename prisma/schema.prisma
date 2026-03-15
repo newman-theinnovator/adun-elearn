@@ -3,9 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
+
 
 enum Role {
   STUDENT
@@ -53,6 +54,7 @@ model User {
   matricNumber   String?  @unique // for students
   staffId        String?  @unique // for lecturers
   isActive       Boolean  @default(true)
+  preferences    Json?    // { emailNotifications, forumAlerts, gradeAlerts }
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -90,6 +92,7 @@ model Course {
   assessments  Assessment[]
   forumPosts   ForumPost[]
   announcements Announcement[]
+  grades       Grade[]
 
   @@map("courses")
 }
@@ -231,7 +234,8 @@ model Grade {
   semester  String
   session   String   // "2024/2025"
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("grades")
