@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Allow unrestricted access to the landing page and specific API routes
-    if (pathname === '/' || pathname.startsWith('/api/auth')) {
+    if (pathname === '/' || pathname.startsWith('/api/auth') || pathname.startsWith('/api/analytics')) {
         return NextResponse.next()
     }
 
