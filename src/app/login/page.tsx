@@ -54,7 +54,7 @@ export default function LoginPage() {
                         <BookOpen className="w-8 h-8 text-blue-950" />
                     </div>
                     <h1 className="text-3xl font-black text-white tracking-tight">ADUN E-Learn</h1>
-                    <p className="text-blue-300 text-sm mt-1 font-medium">Adekunle Ajasin University E-Learning Portal</p>
+                    <p className="text-blue-300 text-sm mt-1 font-medium">Admiralty University of Nigeria E-Learning Portal</p>
                 </div>
 
                 {/* Card */}
@@ -127,8 +127,8 @@ export default function LoginPage() {
                         <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3">Demo Credentials</p>
                         <div className="space-y-2">
                             {[
-                                { role: "Student", email: "student1@stu.adun.edu.ng", color: "emerald" },
-                                { role: "Lecturer", email: "prof.williams@adun.edu.ng", color: "blue" },
+                                { role: "Student", email: "student1@adun.edu.ng", color: "emerald" },
+                                { role: "Lecturer", email: "ngozi.eze@adun.edu.ng", color: "blue" },
                                 { role: "Admin", email: "admin@adun.edu.ng", color: "purple" },
                             ].map(({ role, email: demoEmail, color }) => (
                                 <button
@@ -147,7 +147,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="text-center text-blue-400/60 text-xs mt-6">
-                    © {new Date().getFullYear()} Adekunle Ajasin University. All rights reserved.
+                    © {new Date().getFullYear()} Admiralty University of Nigeria. All rights reserved.
                 </p>
             </div>
         </div>
