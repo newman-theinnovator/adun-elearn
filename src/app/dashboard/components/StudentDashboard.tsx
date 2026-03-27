@@ -8,6 +8,7 @@ import { BookOpen, ClipboardList, TrendingUp, Trophy, Clock, ArrowRight, AlertTr
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtime } from "@/hooks/useRealtime";
 
 export function StudentDashboard() {
     const { data: session } = useAuth();
@@ -16,8 +17,9 @@ export function StudentDashboard() {
     const { data: courses, isLoading: coursesLoading } = useCourses();
     const { data: assessments, isLoading: assessmentsLoading } = useAssessments();
     const { data: analytics, isLoading: analyticsLoading } = useStudentAnalytics(user?.id);
+    const { onlineUsers, lastUpdated } = useRealtime(user?.id);
 
-    if (!user || coursesLoading || assessmentsLoading || analyticsLoading) {
+    if (!user || analyticsLoading) {
         return (
             <div className="space-y-6 max-w-7xl mx-auto">
                 <Skeleton className="h-48 w-full rounded-3xl" />
@@ -31,19 +33,30 @@ export function StudentDashboard() {
         );
     }
 
-    const enrolledCourses = courses?.slice(0, 4) || [];
-    const pendingAssessments = assessments?.slice(0, 4) || [];
+    const enrolledCount = analytics?.enrolledCoursesCount || 0;
+    const pendingCount = analytics?.pendingTasksCount || 0;
     const currentGPA = analytics?.cgpa || 0;
 
     const statCards = [
-        { label: "Enrolled Courses", value: enrolledCourses.length, icon: BookOpen, bgColor: "bg-blue-50 dark:bg-blue-900/30", textColor: "text-blue-700 dark:text-blue-400" },
+        { label: "Enrolled Courses", value: enrolledCount, icon: BookOpen, bgColor: "bg-blue-50 dark:bg-blue-900/30", textColor: "text-blue-700 dark:text-blue-400" },
         { label: "Current CGPA", value: currentGPA, icon: Trophy, bgColor: "bg-amber-50 dark:bg-amber-900/30", textColor: "text-amber-700 dark:text-amber-400" },
         { label: "Logins", value: analytics?.engagement?.loginCount || 0, icon: Target, bgColor: "bg-emerald-50 dark:bg-emerald-900/30", textColor: "text-emerald-700 dark:text-emerald-400" },
-        { label: "Pending Tasks", value: pendingAssessments.length, icon: ClipboardList, bgColor: "bg-purple-50 dark:bg-purple-900/30", textColor: "text-purple-700 dark:text-purple-400" },
+        { label: "Pending Tasks", value: pendingCount, icon: ClipboardList, bgColor: "bg-purple-50 dark:bg-purple-900/30", textColor: "text-purple-700 dark:text-purple-400" },
     ];
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
+            {/* Dashboard Header with Live Badge */}
+            <div className="flex justify-end mb-2 gap-3 items-center">
+                <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium">
+                    Last updated: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm border border-emerald-100 dark:border-emerald-500/20">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                    Live &bull; {onlineUsers} {onlineUsers === 1 ? 'user' : 'users'} online
+                </div>
+            </div>
+
             {/* Welcome Banner */}
             <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-purple-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20 isolate">
                 <div className="absolute -top-20 -right-20 w-80 h-80 bg-gradient-to-br from-amber-400/30 to-rose-400/30 rounded-full blur-3xl animate-float" />
@@ -93,15 +106,21 @@ export function StudentDashboard() {
                         </Link>
                     </div>
                     <div className="h-48 sm:h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={analytics?.gpaTrend || []}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                                <XAxis dataKey="semester" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                                <YAxis domain={[0, 5]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                                <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} />
-                                <Line type="monotone" dataKey="gpa" stroke="#3b82f6" strokeWidth={3} dot={{ fill: "#8b5cf6", r: 4 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {analytics?.gpaTrend && analytics.gpaTrend.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={analytics.gpaTrend}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                    <XAxis dataKey="semester" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                                    <YAxis domain={[0, 5]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                                    <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} />
+                                    <Line type="monotone" dataKey="gpa" stroke="#3b82f6" strokeWidth={3} dot={{ fill: "#8b5cf6", r: 4 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+                                No GPA data available yet.
+                            </div>
+                        )}
                     </div>
                 </div>
 

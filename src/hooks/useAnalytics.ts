@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 
 interface StudentAnalytics {
     cgpa: string;
-    gpaTrend: { semester: string; gpa: string }[];
+    gpaTrend: { semester: string; gpa: number }[];
     gradeDistribution: Record<string, number>;
+    enrolledCoursesCount: number;
+    pendingTasksCount: number;
     engagement: {
         loginCount: number;
         totalTimeSpentMinutes: number;
@@ -26,7 +28,7 @@ interface DepartmentAnalytics {
         activeEnrollments: number;
         departmentAverageGPA: string;
     };
-    performanceByLevel: { level: number; averageGPA: string }[];
+    performanceByLevel: { level: number; averageGPA: number }[];
     popularCourses: { code: string; title: string; students: number }[];
 }
 

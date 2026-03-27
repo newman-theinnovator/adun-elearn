@@ -53,10 +53,31 @@ export async function GET() {
                 ? Math.round((passed / gradedSubmissions.length) * 100)
                 : 0;
 
+        const totalCourses = await prisma.course.count({ where: courseWhere });
+        const totalStudents = await prisma.enrollment.count({ where: { course: courseWhere } });
+
+        const courses = await prisma.course.findMany({
+            where: courseWhere,
+            select: { id: true, code: true, title: true }
+        });
+
+        const courseAverages = await Promise.all(courses.map(async (c) => {
+            const subs = await prisma.submission.findMany({
+                where: { assessment: { courseId: c.id }, status: "GRADED", score: { not: null } },
+                select: { score: true, assessment: { select: { totalMarks: true } } }
+            });
+            if (subs.length === 0) return { code: c.code, title: c.title, average: 0 };
+            const avg = subs.reduce((acc, s) => acc + ((s.score! / s.assessment.totalMarks) * 100), 0) / subs.length;
+            return { code: c.code, title: c.title, average: parseFloat(avg.toFixed(1)) };
+        }));
+
         return NextResponse.json({
             pendingGrading,
             passRate,
             totalGraded: gradedSubmissions.length,
+            totalCourses,
+            totalStudents,
+            courseAverages
         });
     } catch (error) {
         console.error("Error fetching lecturer stats:", error);

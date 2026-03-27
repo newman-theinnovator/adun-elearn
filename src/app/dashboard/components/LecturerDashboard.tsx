@@ -7,9 +7,10 @@ import { BookOpen, Users, ClipboardList, AlertTriangle, ArrowRight, Award } from
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtime } from "@/hooks/useRealtime";
 
 function useLecturerStats() {
-    return useQuery<{ pendingGrading: number; passRate: number; totalGraded: number }>({
+    return useQuery<{ pendingGrading: number; passRate: number; totalGraded: number, totalCourses: number, totalStudents: number, courseAverages: { code: string; title: string; average: number }[] }>({
         queryKey: ["analytics", "lecturer"],
         queryFn: async () => {
             const res = await fetch("/api/analytics/lecturer");
@@ -25,6 +26,7 @@ export function LecturerDashboard() {
 
     const { data: courses, isLoading: coursesLoading } = useCourses();
     const { data: lecturerStats } = useLecturerStats();
+    const { onlineUsers, lastUpdated } = useRealtime(user?.id);
 
     if (!user || coursesLoading) {
         return (
@@ -41,12 +43,13 @@ export function LecturerDashboard() {
     }
 
     const myCourses = courses || [];
-    const totalStudents = myCourses.reduce((acc, curr) => acc + (curr._count?.enrollments || 0), 0);
+    const totalStudents = lecturerStats?.totalStudents ?? 0;
     const pendingGrading = lecturerStats?.pendingGrading ?? 0;
     const passRate = lecturerStats?.passRate ?? 0;
+    const totalCourses = lecturerStats?.totalCourses ?? 0;
 
     const stats = [
-        { label: "My Courses", value: myCourses.length, icon: BookOpen, bg: "bg-blue-50 dark:bg-blue-900/30", color: "text-blue-600 dark:text-blue-400" },
+        { label: "My Courses", value: totalCourses, icon: BookOpen, bg: "bg-blue-50 dark:bg-blue-900/30", color: "text-blue-600 dark:text-blue-400" },
         { label: "Total Students", value: totalStudents, icon: Users, bg: "bg-emerald-50 dark:bg-emerald-900/30", color: "text-emerald-600 dark:text-emerald-400" },
         { label: "Pending Grading", value: pendingGrading, icon: ClipboardList, bg: "bg-amber-50 dark:bg-amber-900/30", color: "text-amber-600 dark:text-amber-400" },
         { label: "Class Pass Rate", value: `${passRate}%`, icon: Award, bg: "bg-purple-50 dark:bg-purple-900/30", color: "text-purple-600 dark:text-purple-400" },
@@ -54,6 +57,17 @@ export function LecturerDashboard() {
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
+            {/* Dashboard Header with Live Badge */}
+            <div className="flex justify-end mb-2 gap-3 items-center">
+                <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium">
+                    Last updated: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <div className="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm border border-blue-100 dark:border-blue-500/20">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                    Live &bull; {onlineUsers} {onlineUsers === 1 ? 'user' : 'users'} online
+                </div>
+            </div>
+
             {/* Welcome */}
             <div className="bg-gradient-to-r from-blue-800 to-indigo-800 rounded-2xl p-5 sm:p-6 text-white shadow-xl">
                 <h1 className="text-xl sm:text-2xl font-bold">{user.firstName} {user.lastName}</h1>
@@ -115,6 +129,29 @@ export function LecturerDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Average Grade per Course Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-5">
+                <h3 className="font-semibold text-sm sm:text-base mb-4 dark:text-white">Average Grade per Course</h3>
+                <div className="h-48 sm:h-56">
+                    {lecturerStats?.courseAverages && lecturerStats.courseAverages.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={lecturerStats.courseAverages}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                                <XAxis dataKey="code" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
+                                <Tooltip contentStyle={{ borderRadius: "8px" }} />
+                                <Bar dataKey="average" fill="#10B981" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+                            No graded assessments available yet.
+                        </div>
+                    )}
+                </div>
+            </div>
+
         </div>
     );
 }

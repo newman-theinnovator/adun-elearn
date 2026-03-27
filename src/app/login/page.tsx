@@ -127,8 +127,8 @@ export default function LoginPage() {
                         <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3">Demo Credentials</p>
                         <div className="space-y-2">
                             {[
-                                { role: "Student", email: "student1@adun.edu.ng", color: "emerald" },
-                                { role: "Lecturer", email: "ngozi.eze@adun.edu.ng", color: "blue" },
+                                { role: "Student", email: "stu0@adun.edu.ng", color: "emerald" },
+                                { role: "Lecturer", email: "n.eze@adun.edu.ng", color: "blue" },
                                 { role: "Admin", email: "admin@adun.edu.ng", color: "purple" },
                             ].map(({ role, email: demoEmail, color }) => (
                                 <button

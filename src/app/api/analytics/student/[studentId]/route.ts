@@ -41,10 +41,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
             }
         });
 
-        const cgpa = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(2) : 0;
+        const cgpa = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(2) : "0.00";
         const gpaTrend = Object.keys(semesterGPA).map(key => ({
             semester: key,
-            gpa: (semesterGPA[key].points / semesterGPA[key].units).toFixed(2)
+            gpa: parseFloat((semesterGPA[key].points / semesterGPA[key].units).toFixed(2))
         }));
 
         // 2. Fetch Activity for Engagement
@@ -94,10 +94,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
 
         const predictedGrade = getLetterGrade(predictedScore);
 
+        const enrolledCoursesCount = await prisma.enrollment.count({ where: { userId: studentId } });
+        const pendingTasksCount = await prisma.assessment.count({
+            where: {
+                isPublished: true,
+                course: { enrollments: { some: { userId: studentId } } },
+                submissions: { none: { userId: studentId } }
+            }
+        });
+
         return NextResponse.json({
             cgpa,
             gpaTrend,
             gradeDistribution,
+            enrolledCoursesCount,
+            pendingTasksCount,
             engagement: {
                 loginCount,
                 totalTimeSpentMinutes: Math.floor(totalTimeSpent / 60),

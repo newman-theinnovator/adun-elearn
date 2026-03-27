@@ -1,12 +1,88 @@
 "use client";
 
 import { useDepartmentAnalytics } from "@/hooks/useAnalytics";
-import { Users, BookOpen, TrendingUp, GraduationCap, Download } from "lucide-react";
+import { Users, BookOpen, TrendingUp, GraduationCap, Download, FileText, Table } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/providers/AuthProvider";
+import { useRealtime } from "@/hooks/useRealtime";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export function AdminDashboard() {
+    const { data: session } = useAuth();
+    const user = session?.user as any;
+    
     const { data: admin, isLoading } = useDepartmentAnalytics();
+    const { onlineUsers, lastUpdated } = useRealtime(user?.id);
+
+    const handleExportPDF = () => {
+        if (!admin) return;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(20);
+        doc.text("Department Performance Report", 14, 22);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.text("Overview Statistics", 14, 45);
+        
+        autoTable(doc, {
+            startY: 50,
+            head: [['Metric', 'Value']],
+            body: [
+                ['Total Students', admin.overview.totalStudents.toString()],
+                ['Total Lecturers', admin.overview.totalLecturers.toString()],
+                ['Active Courses', admin.overview.totalCourses.toString()],
+                ['Department Average CGPA', admin.overview.departmentAverageGPA.toString()]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] }
+        });
+
+        doc.text("Average GPA by Level", 14, (doc as any).lastAutoTable.finalY + 15);
+        const levelData = admin.performanceByLevel.map(item => [
+            `${item.level} Level`, 
+            item.averageGPA.toString()
+        ]);
+        
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY + 20,
+            head: [['Academic Level', 'Average CGPA']],
+            body: levelData,
+            theme: 'striped',
+            headStyles: { fillColor: [16, 185, 129] }
+        });
+
+        doc.save("department-report.pdf");
+    };
+
+    const handleExportCSV = () => {
+        if (!admin) return;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Metric,Value\n";
+        csvContent += `Total Students,${admin.overview.totalStudents}\n`;
+        csvContent += `Total Lecturers,${admin.overview.totalLecturers}\n`;
+        csvContent += `Active Courses,${admin.overview.totalCourses}\n`;
+        csvContent += `Department Average CGPA,${admin.overview.departmentAverageGPA}\n\n`;
+        
+        csvContent += "Academic Level,Average CGPA\n";
+        admin.performanceByLevel.forEach(item => {
+            csvContent += `${item.level} Level,${item.averageGPA}\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "department-performance.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     if (isLoading || !admin) {
         return (
@@ -43,9 +119,23 @@ export function AdminDashboard() {
                     <h1 className="text-xl sm:text-2xl font-bold dark:text-white">Department Overview</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Software Engineering Department, ADUN</p>
                 </div>
-                <button className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors w-full sm:w-auto shadow-md">
-                    <Download className="w-4 h-4" /> Export Report
-                </button>
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap hidden md:inline-block">
+                        Last updated: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                    <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-sm border border-emerald-100 dark:border-emerald-500/20">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                        Live &bull; {onlineUsers} {onlineUsers === 1 ? 'user' : 'users'} online
+                    </div>
+                    <div className="flex bg-blue-900 rounded-lg overflow-hidden shadow-md">
+                        <button onClick={handleExportPDF} className="flex items-center gap-2 text-white px-3 py-2 text-xs sm:text-sm font-medium hover:bg-blue-800 transition-colors border-r border-blue-800 focus:outline-none">
+                            <FileText className="w-4 h-4" /> PDF
+                        </button>
+                        <button onClick={handleExportCSV} className="flex items-center gap-2 text-white px-3 py-2 text-xs sm:text-sm font-medium hover:bg-blue-800 transition-colors focus:outline-none">
+                            <Table className="w-4 h-4" /> CSV
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Stats */}
@@ -66,15 +156,21 @@ export function AdminDashboard() {
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 sm:p-5">
                     <h3 className="font-semibold text-sm sm:text-base mb-4 dark:text-white">Average GPA by Level</h3>
                     <div className="h-48 sm:h-56">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={admin.performanceByLevel}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                                <XAxis dataKey="level" tick={{ fontSize: 10 }} tickFormatter={(val) => `${val} Level`} />
-                                <YAxis tick={{ fontSize: 10 }} domain={[0, 5]} />
-                                <Tooltip contentStyle={{ borderRadius: "8px" }} />
-                                <Bar dataKey="averageGPA" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {admin.performanceByLevel && admin.performanceByLevel.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={admin.performanceByLevel}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                                    <XAxis dataKey="level" tick={{ fontSize: 10 }} tickFormatter={(val) => `${val} Level`} />
+                                    <YAxis tick={{ fontSize: 10 }} domain={[0, 5]} />
+                                    <Tooltip contentStyle={{ borderRadius: "8px" }} />
+                                    <Bar dataKey="averageGPA" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+                                No performance data available.
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -49,8 +49,8 @@ export async function GET(req: Request) {
         const performanceByLevel = Object.keys(levelGPA).map(lvl => ({
             level: parseInt(lvl, 10),
             averageGPA: levelGPA[parseInt(lvl, 10)].units > 0
-                ? (levelGPA[parseInt(lvl, 10)].points / levelGPA[parseInt(lvl, 10)].units).toFixed(2)
-                : "0.00"
+                ? parseFloat((levelGPA[parseInt(lvl, 10)].points / levelGPA[parseInt(lvl, 10)].units).toFixed(2))
+                : 0.00
         }));
 
         // 4. Most popular courses
