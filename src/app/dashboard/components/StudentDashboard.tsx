@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useState, useEffect } from "react";
 
 export function StudentDashboard() {
     const { data: session } = useAuth();
@@ -18,6 +19,25 @@ export function StudentDashboard() {
     const { data: assessments, isLoading: assessmentsLoading } = useAssessments();
     const { data: analytics, isLoading: analyticsLoading } = useStudentAnalytics(user?.id);
     const { onlineUsers, lastUpdated } = useRealtime(user?.id);
+
+    const [aiInsights, setAiInsights] = useState<any>(null);
+    const [aiLoading, setAiLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.id) {
+            setAiLoading(true);
+            fetch(`/api/ai-insights/${user.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    setAiInsights(data);
+                    setAiLoading(false);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch AI insights", err);
+                    setAiLoading(false);
+                });
+        }
+    }, [user?.id]);
 
     if (!user || analyticsLoading) {
         return (
@@ -70,11 +90,19 @@ export function StudentDashboard() {
                     <div className="flex flex-wrap gap-2 sm:gap-4 mt-4 sm:mt-8">
                         <div className="glass px-3 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl min-w-0 flex-1 sm:flex-none">
                             <p className="text-[10px] sm:text-xs text-indigo-200 font-semibold mb-1 uppercase tracking-wider">Predicted Grade</p>
-                            <p className="text-xl sm:text-3xl font-black bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">{analytics?.predictions?.predictedScore || "N/A"}%</p>
+                            {aiLoading ? (
+                                <Skeleton className="h-8 w-16 bg-white/20 mt-1" />
+                            ) : (
+                                <p className="text-xl sm:text-3xl font-black bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">{aiInsights?.predictedGrade || 0}%</p>
+                            )}
                         </div>
                         <div className="glass px-3 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl min-w-0 flex-1 sm:flex-none">
                             <p className="text-[10px] sm:text-xs text-indigo-200 font-semibold mb-1 uppercase tracking-wider">Confidence</p>
-                            <p className="text-xl sm:text-3xl font-black bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">{analytics?.predictions?.confidence || 0}%</p>
+                            {aiLoading ? (
+                                <Skeleton className="h-8 w-16 bg-white/20 mt-1" />
+                            ) : (
+                                <p className="text-xl sm:text-3xl font-black bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">{aiInsights?.confidence || 0}%</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -125,24 +153,38 @@ export function StudentDashboard() {
                 </div>
 
                 {/* AI Recommendations */}
-                <div className="glass-card rounded-2xl p-4 sm:p-6 transition-shadow hover:shadow-lg">
+                <div className="glass-card rounded-2xl p-4 sm:p-6 transition-shadow hover:shadow-lg flex flex-col">
                     <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4 sm:mb-6 flex items-center gap-2">
                         <span className="text-xl sm:text-2xl animate-pulse">🤖</span> AI Insights
                     </h3>
-                    <div className="space-y-3 sm:space-y-4">
-                        <div className="bg-blue-50/80 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-xl text-sm transition-all hover:shadow-sm">
-                            <div className="flex items-start gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5" />
-                                <p className="font-medium text-gray-700 dark:text-gray-300">Strongest area: {analytics?.strengths}</p>
+                    {aiLoading ? (
+                        <div className="space-y-3 flex-1">
+                            <Skeleton className="h-12 w-full rounded-xl" />
+                            <Skeleton className="h-12 w-full rounded-xl" />
+                            <Skeleton className="h-12 w-full rounded-xl" />
+                        </div>
+                    ) : (
+                        <div className="space-y-3 sm:space-y-4 flex-1">
+                            <div className="bg-blue-50/80 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-xl text-sm transition-all hover:shadow-sm">
+                                <div className="flex items-start gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                                    <p className="font-medium text-gray-700 dark:text-gray-300">Strongest area: <span className="font-bold text-gray-900 dark:text-gray-100">{aiInsights?.strongestArea || 'N/A'}</span></p>
+                                </div>
+                            </div>
+                            <div className="bg-rose-50/80 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 p-3 rounded-xl text-sm transition-all hover:shadow-sm">
+                                <div className="flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                                    <p className="font-medium text-gray-700 dark:text-gray-300">Area to improve: <span className="font-bold text-gray-900 dark:text-gray-100">{aiInsights?.areaToImprove || 'N/A'}</span></p>
+                                </div>
+                            </div>
+                            <div className="bg-emerald-50/80 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded-xl text-sm transition-all hover:shadow-sm">
+                                <div className="flex items-start gap-2">
+                                    <Target className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                    <p className="font-medium text-gray-700 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-gray-100">Analysis:</span> {aiInsights?.explanation || 'Keep learning to get detailed insights.'}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="bg-rose-50/80 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 p-3 rounded-xl text-sm transition-all hover:shadow-sm">
-                            <div className="flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5" />
-                                <p className="font-medium text-gray-700 dark:text-gray-300">Area to improve: {analytics?.weaknesses}</p>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
