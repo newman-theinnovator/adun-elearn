@@ -1,27 +1,27 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, unauthorized, forbidden, notFound, apiError } from "@/lib/api-response";
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     try {
         const { id } = await params;
 
         // Auth check: Is this the user's notification?
         const notification = await prisma.notification.findUnique({ where: { id } });
-        if (!notification) return NextResponse.json({ message: "Not found" }, { status: 404 });
-        if (notification.userId !== session.user.id) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        if (!notification) return notFound();
+        if (notification.userId !== session.user.id) return forbidden();
 
         const updated = await prisma.notification.update({
             where: { id },
-            data: { isRead: true }
+            data: { isRead: true },
         });
 
-        return NextResponse.json(updated);
+        return apiSuccess(updated);
     } catch (error) {
         console.error("Error updating notification:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

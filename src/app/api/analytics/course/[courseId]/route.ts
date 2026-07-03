@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, forbidden, notFound, apiError } from "@/lib/api-response";
 
-export async function GET(req: Request, { params }: { params: Promise<{ courseId: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ courseId: string }> }) {
     const session = await auth();
     if (!session || session.user.role === "STUDENT") {
-        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        return forbidden();
     }
 
     try {
@@ -13,19 +13,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
 
         // Auth check
         const course = await prisma.course.findUnique({ where: { id: courseId } });
-        if (!course) return NextResponse.json({ message: "Course not found" }, { status: 404 });
+        if (!course) return notFound("Course not found");
         if (session.user.role !== "ADMIN" && course.instructorId !== session.user.id) {
-            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+            return forbidden();
         }
 
         // Class average score
         const grades = await prisma.grade.findMany({
             where: { courseId },
-            include: { user: { select: { firstName: true, lastName: true, matricNumber: true } } }
+            include: { user: { select: { firstName: true, lastName: true, matricNumber: true } } },
         });
-        const classAverageScore = grades.length > 0
-            ? grades.reduce((acc, curr) => acc + (curr.total || 0), 0) / grades.length
-            : 0;
+        const classAverageScore =
+            grades.length > 0
+                ? grades.reduce((acc, curr) => acc + (curr.total || 0), 0) / grades.length
+                : 0;
 
         // Score distribution (histogram buckets)
         const distribution = { "0-39": 0, "40-49": 0, "50-59": 0, "60-69": 0, "70-100": 0 };
@@ -65,22 +66,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         // Engagement metrics
         const activities = await prisma.activityLog.findMany({
             where: {
-                metadata: { path: ['courseId'], equals: courseId }
-            }
+                metadata: { path: ["courseId"], equals: courseId },
+            },
         });
 
-        return NextResponse.json({
+        return apiSuccess({
             classAverageScore: classAverageScore.toFixed(1),
             distribution,
             atRiskStudents,
             topPerformers,
             engagement: {
-                totalCourseViews: activities.filter(a => a.action === 'VIEW_COURSE').length,
-            }
+                totalCourseViews: activities.filter((a) => a.action === "VIEW_COURSE").length,
+            },
         });
-
     } catch (error) {
         console.error("Error generating course analytics:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

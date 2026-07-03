@@ -47,8 +47,18 @@ export function useStudentAnalytics(studentId: string) {
 interface CourseAnalytics {
     classAverageScore: string;
     distribution: Record<string, number>;
-    atRiskStudents: { firstName: string; lastName: string; matricNumber: string | null; reason: string }[];
-    topPerformers: { firstName: string; lastName: string; matricNumber: string | null; score: number | null }[];
+    atRiskStudents: {
+        firstName: string;
+        lastName: string;
+        matricNumber: string | null;
+        reason: string;
+    }[];
+    topPerformers: {
+        firstName: string;
+        lastName: string;
+        matricNumber: string | null;
+        score: number | null;
+    }[];
     engagement: { totalCourseViews: number };
 }
 

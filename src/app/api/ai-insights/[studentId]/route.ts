@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess } from "@/lib/api-response";
 
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     context: { params: Promise<{ studentId: string }> }
 ) {
     const session = await auth();
@@ -28,9 +29,9 @@ export async function GET(
             include: {
                 grades: { include: { course: true } },
                 submissions: {
-                    include: { assessment: { include: { course: true } } }
-                }
-            }
+                    include: { assessment: { include: { course: true } } },
+                },
+            },
         });
 
         if (!student) {
@@ -86,7 +87,13 @@ export async function GET(
             predictedGrade = Math.min(100, Math.max(0, Math.round(percentage)));
 
             // Confidence grows with more data points, capped at 85%
-            confidence = Math.min(85, 15 + (scoreCount > 0 ? 20 : 0) + (scoreCount > 2 ? 20 : 0) + (scoreCount > 5 ? 30 : 0));
+            confidence = Math.min(
+                85,
+                15 +
+                    (scoreCount > 0 ? 20 : 0) +
+                    (scoreCount > 2 ? 20 : 0) +
+                    (scoreCount > 5 ? 30 : 0)
+            );
 
             let maxAvg = -1;
             let minAvg = 101;
@@ -113,7 +120,8 @@ export async function GET(
 
         let explanation = "";
         if (scoreCount === 0) {
-            explanation = "Complete some assessments or wait for grades to start receiving personalised analytics.";
+            explanation =
+                "Complete some assessments or wait for grades to start receiving personalised analytics.";
         } else if (predictedGrade >= 70) {
             explanation = `Excellent trajectory. Your performance in ${strongestArea} is a key strength. Maintain your current engagement level.`;
         } else if (predictedGrade >= 50) {
@@ -122,14 +130,13 @@ export async function GET(
             explanation = `Your current scores suggest urgent attention is needed in ${areaToImprove}. Reach out to your lecturer for guidance.`;
         }
 
-        return NextResponse.json({
+        return apiSuccess({
             predictedGrade,
             confidence,
             strongestArea,
             areaToImprove,
-            explanation
+            explanation,
         });
-
     } catch (error) {
         console.error("AI Insights Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

@@ -1,0 +1,11 @@
+.next/
+node_modules/
+build/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+prisma/migrations/
+.agent/
+.agents/

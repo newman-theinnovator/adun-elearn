@@ -6,6 +6,15 @@ import { useCourses } from "@/hooks/useCourses";
 import { Search, Users, BookOpen, Clock } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function CoursesPage() {
     const { data: session } = useAuth();
@@ -18,13 +27,13 @@ export default function CoursesPage() {
 
     if (isLoading || !courses) {
         return (
-            <div className="space-y-6 max-w-7xl mx-auto">
+            <div className="mx-auto max-w-7xl space-y-6">
                 <div className="flex justify-between">
                     <Skeleton className="h-10 w-48" />
                     <Skeleton className="h-10 w-32" />
                 </div>
                 <Skeleton className="h-16 w-full rounded-xl" />
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
                         <Skeleton key={i} className="h-64 w-full rounded-xl" />
                     ))}
@@ -34,7 +43,9 @@ export default function CoursesPage() {
     }
 
     const filtered = courses.filter((c: any) => {
-        const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase());
+        const matchSearch =
+            c.title.toLowerCase().includes(search.toLowerCase()) ||
+            c.code.toLowerCase().includes(search.toLowerCase());
         const matchLevel = levelFilter === "all" || c.level === parseInt(levelFilter);
         const matchSem = semFilter === "all" || c.semester === semFilter;
         return matchSearch && matchLevel && matchSem;
@@ -46,62 +57,76 @@ export default function CoursesPage() {
         "from-emerald-500 to-emerald-600",
         "from-amber-500 to-amber-600",
         "from-pink-500 to-pink-600",
-        "from-indigo-500 to-indigo-600"
+        "from-indigo-500 to-indigo-600",
     ];
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="mx-auto max-w-7xl space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold dark:text-white">
+                    <h1 className="text-xl font-bold sm:text-2xl dark:text-white">
                         {user?.role === "STUDENT" ? "My Courses" : "Course Management"}
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">{filtered.length} courses available</p>
+                    <p className="text-xs text-gray-500 sm:text-sm dark:text-gray-400">
+                        {filtered.length} courses available
+                    </p>
                 </div>
                 {user?.role !== "STUDENT" && (
-                    <button className="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto shadow-md">
-                        <BookOpen className="w-4 h-4" /> Create Course
+                    <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-md transition-colors hover:bg-blue-800 sm:w-auto">
+                        <BookOpen className="h-4 w-4" /> Create Course
                     </button>
                 )}
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
+            <Card className="rounded-xl p-4">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="relative flex-1">
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <label htmlFor="course-search" className="sr-only">
+                            Search courses
+                        </label>
+                        <Input
+                            id="course-search"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search courses by title or code..."
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                            className="rounded-lg py-2 pl-10"
                         />
                     </div>
-                    <select
-                        value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value)}
-                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-colors"
-                    >
-                        <option value="all">All Levels</option>
-                        <option value="100">100 Level</option>
-                        <option value="200">200 Level</option>
-                        <option value="300">300 Level</option>
-                        <option value="400">400 Level</option>
-                    </select>
-                    <select
-                        value={semFilter}
-                        onChange={(e) => setSemFilter(e.target.value)}
-                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 transition-colors"
-                    >
-                        <option value="all">All Semesters</option>
-                        <option value="FIRST">First Semester</option>
-                        <option value="SECOND">Second Semester</option>
-                    </select>
+                    <Select value={levelFilter} onValueChange={setLevelFilter}>
+                        <SelectTrigger
+                            aria-label="Filter by level"
+                            className="rounded-lg py-2 sm:w-40"
+                        >
+                            <SelectValue placeholder="All Levels" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Levels</SelectItem>
+                            <SelectItem value="100">100 Level</SelectItem>
+                            <SelectItem value="200">200 Level</SelectItem>
+                            <SelectItem value="300">300 Level</SelectItem>
+                            <SelectItem value="400">400 Level</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={semFilter} onValueChange={setSemFilter}>
+                        <SelectTrigger
+                            aria-label="Filter by semester"
+                            className="rounded-lg py-2 sm:w-48"
+                        >
+                            <SelectValue placeholder="All Semesters" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Semesters</SelectItem>
+                            <SelectItem value="FIRST">First Semester</SelectItem>
+                            <SelectItem value="SECOND">Second Semester</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-            </div>
+            </Card>
 
             {/* Course Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.length === 0 ? (
                     <div className="col-span-full py-12 text-center text-gray-500">
                         No courses found matching your criteria.
@@ -113,39 +138,65 @@ export default function CoursesPage() {
 
                         return (
                             <Link key={c.id} href={`/dashboard/courses/${c.id}`}>
-                                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden group h-full flex flex-col hover:-translate-y-1">
-                                    <div className={`h-28 bg-gradient-to-br ${courseColors[idx % courseColors.length]} p-4 flex flex-col justify-between`}>
+                                <div className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                    <div
+                                        className={`h-28 bg-gradient-to-br ${courseColors[idx % courseColors.length]} flex flex-col justify-between p-4`}
+                                    >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded backdrop-blur-sm shadow-sm">{c.code}</span>
-                                            <span className="text-xs font-medium text-white/80 bg-white/10 px-2 py-0.5 rounded shadow-sm">{c.category || "General"}</span>
+                                            <span className="rounded bg-white/20 px-2 py-0.5 text-xs font-bold text-white/90 shadow-sm backdrop-blur-sm">
+                                                {c.code}
+                                            </span>
+                                            <span className="rounded bg-white/10 px-2 py-0.5 text-xs font-medium text-white/80 shadow-sm">
+                                                {c.category || "General"}
+                                            </span>
                                         </div>
-                                        <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 group-hover:underline drop-shadow-md">{c.title}</h3>
+                                        <h3 className="line-clamp-2 text-lg leading-tight font-bold text-white drop-shadow-md group-hover:underline">
+                                            {c.title}
+                                        </h3>
                                     </div>
-                                    <div className="p-4 flex flex-col flex-1">
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 flex-1">{c.description}</p>
-                                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                            <span className="flex items-center gap-1 font-medium"><Users className="w-3 h-3 text-blue-500" /> {c._count?.enrollments || 0}</span>
-                                            <span className="flex items-center gap-1 font-medium"><BookOpen className="w-3 h-3 text-emerald-500" /> {c._count?.modules || 0} modules</span>
-                                            <span className="flex items-center gap-1 font-medium"><Clock className="w-3 h-3 text-amber-500" /> {c.level}L</span>
+                                    <div className="flex flex-1 flex-col p-4">
+                                        <p className="mb-3 line-clamp-2 flex-1 text-xs text-gray-500 dark:text-gray-400">
+                                            {c.description}
+                                        </p>
+                                        <div className="mb-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                            <span className="flex items-center gap-1 font-medium">
+                                                <Users className="h-3 w-3 text-blue-500" />{" "}
+                                                {c._count?.enrollments || 0}
+                                            </span>
+                                            <span className="flex items-center gap-1 font-medium">
+                                                <BookOpen className="h-3 w-3 text-emerald-500" />{" "}
+                                                {c._count?.modules || 0} modules
+                                            </span>
+                                            <span className="flex items-center gap-1 font-medium">
+                                                <Clock className="h-3 w-3 text-amber-500" />{" "}
+                                                {c.level}L
+                                            </span>
                                         </div>
-                                        <div className="flex items-center justify-between mt-auto">
+                                        <div className="mt-auto flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
-                                                    {c.instructor?.firstName?.[0] || ""}{c.instructor?.lastName?.[0] || "U"}
+                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white shadow-sm">
+                                                    {c.instructor?.firstName?.[0] || ""}
+                                                    {c.instructor?.lastName?.[0] || "U"}
                                                 </div>
                                                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                    {c.instructor?.firstName} {c.instructor?.lastName}
+                                                    {c.instructor?.firstName}{" "}
+                                                    {c.instructor?.lastName}
                                                 </span>
                                             </div>
                                             {user?.role === "STUDENT" && c.isEnrolled && (
                                                 <div className="text-right">
-                                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
+                                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                                        {progress}%
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
                                         {user?.role === "STUDENT" && c.isEnrolled && (
-                                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-3 overflow-hidden">
-                                                <div className="bg-gradient-to-r from-blue-600 to-blue-400 h-1.5 rounded-full" style={{ width: `${progress}%` }} />
+                                            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                                                <div
+                                                    className="h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
+                                                    style={{ width: `${progress}%` }}
+                                                />
                                             </div>
                                         )}
                                     </div>

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 export async function GET(req: Request) {
     const session = await auth();
     if (!session || session.user?.role !== "ADMIN") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+        return apiError(403, "Unauthorized");
     }
 
     const { searchParams } = new URL(req.url);
@@ -28,9 +28,9 @@ export async function GET(req: Request) {
             orderBy: { createdAt: "desc" },
         });
 
-        return NextResponse.json(users);
+        return apiSuccess(users);
     } catch (error) {
         console.error("Error fetching users:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

@@ -67,7 +67,15 @@ export function useCreatePost() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ title, body, courseId }: { title: string; body: string; courseId: string }) => {
+        mutationFn: async ({
+            title,
+            body,
+            courseId,
+        }: {
+            title: string;
+            body: string;
+            courseId: string;
+        }) => {
             const res = await fetch("/api/forum", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

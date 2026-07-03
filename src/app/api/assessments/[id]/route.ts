@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, unauthorized, notFound, forbidden, apiError } from "@/lib/api-response";
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     try {
         const { id } = await params;
@@ -14,19 +14,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             where: { id },
             include: {
                 course: { select: { code: true, title: true, instructorId: true } },
-                questions: { orderBy: { order: 'asc' } },
+                questions: { orderBy: { order: "asc" } },
                 submissions: {
                     where: isStudent ? { userId: session.user.id } : undefined, // Include only student's own submission if student
-                    include: isStudent ? undefined : { user: { select: { firstName: true, lastName: true, matricNumber: true } } }
-                }
-            }
+                    include: isStudent
+                        ? undefined
+                        : {
+                              user: {
+                                  select: { firstName: true, lastName: true, matricNumber: true },
+                              },
+                          },
+                },
+            },
         });
 
-        if (!assessment) return NextResponse.json({ message: "Assessment not found" }, { status: 404 });
+        if (!assessment) return notFound("Assessment not found");
 
         // Students cannot view unpublished assessments
         if (!assessment.isPublished && isStudent) {
-            return NextResponse.json({ message: "Assessment unavailable" }, { status: 403 });
+            return forbidden("Assessment unavailable");
         }
 
         if (isStudent) {
@@ -37,9 +43,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             });
         }
 
-        return NextResponse.json(assessment);
+        return apiSuccess(assessment);
     } catch (error) {
         console.error("Error fetching assessment:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

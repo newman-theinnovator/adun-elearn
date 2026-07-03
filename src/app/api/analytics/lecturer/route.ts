@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, forbidden, apiError } from "@/lib/api-response";
 
 // GET /api/analytics/lecturer — returns stats for the currently logged-in lecturer
 export async function GET() {
     const session = await auth();
     if (!session || session.user.role === "STUDENT") {
-        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        return forbidden();
     }
 
     try {
@@ -58,32 +58,39 @@ export async function GET() {
 
         const courses = await prisma.course.findMany({
             where: courseWhere,
-            select: { id: true, code: true, title: true }
+            select: { id: true, code: true, title: true },
         });
 
-        const courseAverages = await Promise.all(courses.map(async (c) => {
-            const subs = await prisma.submission.findMany({
-                where: { assessment: { courseId: c.id }, status: "GRADED", score: { not: null } },
-                select: { score: true, assessment: { select: { totalMarks: true } } }
-            });
-            if (subs.length === 0) return { code: c.code, title: c.title, average: 0 };
-            const avg = subs.reduce((acc: number, s) => acc + ((s.score! / s.assessment.totalMarks) * 100), 0) / subs.length;
-            return { code: c.code, title: c.title, average: parseFloat(avg.toFixed(1)) };
-        }));
+        const courseAverages = await Promise.all(
+            courses.map(async (c) => {
+                const subs = await prisma.submission.findMany({
+                    where: {
+                        assessment: { courseId: c.id },
+                        status: "GRADED",
+                        score: { not: null },
+                    },
+                    select: { score: true, assessment: { select: { totalMarks: true } } },
+                });
+                if (subs.length === 0) return { code: c.code, title: c.title, average: 0 };
+                const avg =
+                    subs.reduce(
+                        (acc: number, s) => acc + (s.score! / s.assessment.totalMarks) * 100,
+                        0
+                    ) / subs.length;
+                return { code: c.code, title: c.title, average: parseFloat(avg.toFixed(1)) };
+            })
+        );
 
-        return NextResponse.json({
+        return apiSuccess({
             pendingGrading,
             passRate,
             totalGraded: gradedSubmissions.length,
             totalCourses,
             totalStudents,
-            courseAverages
+            courseAverages,
         });
     } catch (error) {
         console.error("Error fetching lecturer stats:", error);
-        return NextResponse.json(
-            { message: "Internal server error" },
-            { status: 500 }
-        );
+        return apiError(500, "Internal server error");
     }
 }

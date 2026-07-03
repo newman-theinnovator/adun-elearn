@@ -2,8 +2,34 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, UserCheck, UserX, Shield, GraduationCap, BookOpen, MoreVertical } from "lucide-react";
+import {
+    Search,
+    UserCheck,
+    UserX,
+    Shield,
+    GraduationCap,
+    BookOpen,
+    MoreVertical,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell,
+} from "@/components/ui/table";
 
 interface UserRecord {
     id: string;
@@ -51,12 +77,6 @@ const ROLE_ICON: Record<string, React.ElementType> = {
     ADMIN: Shield,
 };
 
-const ROLE_COLOR: Record<string, string> = {
-    STUDENT: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    LECTURER: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    ADMIN: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-};
-
 export default function UsersPage() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
@@ -77,137 +97,200 @@ export default function UsersPage() {
     });
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="mx-auto max-w-6xl space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold dark:text-white">User Management</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {users?.length || 0} total accounts
                     </p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
+                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <label htmlFor="user-search" className="sr-only">
+                        Search users
+                    </label>
+                    <Input
+                        id="user-search"
                         type="text"
                         placeholder="Search by name, email, matric or staff ID…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="pl-10"
                     />
                 </div>
-                <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-colors"
+                <Select
+                    value={roleFilter || "ALL"}
+                    onValueChange={(v) => setRoleFilter(v === "ALL" ? "" : v)}
                 >
-                    <option value="">All Roles</option>
-                    <option value="STUDENT">Students</option>
-                    <option value="LECTURER">Lecturers</option>
-                    <option value="ADMIN">Admins</option>
-                </select>
+                    <SelectTrigger aria-label="Filter by role" className="sm:w-48">
+                        <SelectValue placeholder="All Roles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="ALL">All Roles</SelectItem>
+                        <SelectItem value="STUDENT">Students</SelectItem>
+                        <SelectItem value="LECTURER">Lecturers</SelectItem>
+                        <SelectItem value="ADMIN">Admins</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    {isLoading ? (
-                        <div className="p-6 space-y-3">
-                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-                        </div>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
-                                <tr>
-                                    <th className="text-left py-4 px-5 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">User</th>
-                                    <th className="text-left py-4 px-5 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">ID / Matric</th>
-                                    <th className="text-center py-4 px-5 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Role</th>
-                                    <th className="text-center py-4 px-5 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Status</th>
-                                    <th className="py-4 px-5" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {filtered.length === 0 ? (
-                                    <tr><td colSpan={5} className="py-10 text-center text-gray-400 text-sm">No users found.</td></tr>
-                                ) : filtered.map((u) => {
+            <Card>
+                {isLoading ? (
+                    <div className="space-y-3 p-6">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full rounded-xl" />
+                        ))}
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                                <TableHead>User</TableHead>
+                                <TableHead>ID / Matric</TableHead>
+                                <TableHead className="text-center">Role</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filtered.length === 0 ? (
+                                <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                                    <TableCell
+                                        colSpan={5}
+                                        className="py-10 text-center text-sm text-gray-400"
+                                    >
+                                        No users found.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filtered.map((u) => {
                                     const RoleIcon = ROLE_ICON[u.role] || Shield;
                                     return (
-                                        <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                                            <td className="py-4 px-5">
+                                        <TableRow key={u.id}>
+                                            <TableCell>
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${u.role === "STUDENT" ? "bg-emerald-500" : u.role === "LECTURER" ? "bg-blue-500" : "bg-purple-500"}`}>
-                                                        {u.firstName?.[0]}{u.lastName?.[0]}
+                                                    <div
+                                                        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${u.role === "STUDENT" ? "bg-emerald-500" : u.role === "LECTURER" ? "bg-blue-500" : "bg-purple-500"}`}
+                                                    >
+                                                        {u.firstName?.[0]}
+                                                        {u.lastName?.[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold dark:text-white">{u.firstName} {u.lastName}</p>
-                                                        <p className="text-xs text-gray-400">{u.email}</p>
+                                                        <p className="font-semibold dark:text-white">
+                                                            {u.firstName} {u.lastName}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {u.email}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-5 text-gray-500 dark:text-gray-400 text-xs font-mono">
+                                            </TableCell>
+                                            <TableCell className="font-mono text-xs text-gray-500 dark:text-gray-400">
                                                 {u.matricNumber || u.staffId || "—"}
-                                                {u.level ? <span className="ml-1 text-gray-400">({u.level}L)</span> : null}
-                                            </td>
-                                            <td className="py-4 px-5 text-center">
-                                                <span className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg ${ROLE_COLOR[u.role]}`}>
-                                                    <RoleIcon className="w-3 h-3" />
+                                                {u.level ? (
+                                                    <span className="ml-1 text-gray-400">
+                                                        ({u.level}L)
+                                                    </span>
+                                                ) : null}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge
+                                                    variant={
+                                                        u.role === "STUDENT"
+                                                            ? "success"
+                                                            : u.role === "LECTURER"
+                                                              ? "info"
+                                                              : "purple"
+                                                    }
+                                                >
+                                                    <RoleIcon className="h-3 w-3" />
                                                     {u.role}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-5 text-center">
-                                                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"}`}>
-                                                    {u.isActive ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge
+                                                    pill
+                                                    variant={u.isActive ? "success" : "destructive"}
+                                                    className="font-semibold"
+                                                >
+                                                    {u.isActive ? (
+                                                        <UserCheck className="h-3 w-3" />
+                                                    ) : (
+                                                        <UserX className="h-3 w-3" />
+                                                    )}
                                                     {u.isActive ? "Active" : "Inactive"}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-5 relative">
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="relative">
                                                 <div className="relative inline-block">
                                                     <button
-                                                        onClick={() => setActiveMenu(activeMenu === u.id ? null : u.id)}
-                                                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                        onClick={() =>
+                                                            setActiveMenu(
+                                                                activeMenu === u.id ? null : u.id
+                                                            )
+                                                        }
+                                                        aria-label={`Actions for ${u.firstName} ${u.lastName}`}
+                                                        className="rounded-lg p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                                                     >
-                                                        <MoreVertical className="w-4 h-4 text-gray-400" />
+                                                        <MoreVertical className="h-4 w-4 text-gray-400" />
                                                     </button>
                                                     {activeMenu === u.id && (
-                                                        <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-10 overflow-hidden text-xs">
+                                                        <div className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white text-xs shadow-lg dark:border-gray-700 dark:bg-gray-800">
                                                             <button
-                                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium dark:text-gray-200"
+                                                                className="w-full px-4 py-2.5 text-left font-medium transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
                                                                 onClick={() => {
-                                                                    updateUser({ id: u.id, isActive: !u.isActive });
+                                                                    updateUser({
+                                                                        id: u.id,
+                                                                        isActive: !u.isActive,
+                                                                    });
                                                                     setActiveMenu(null);
                                                                 }}
                                                                 disabled={isPending}
                                                             >
-                                                                {u.isActive ? "Deactivate Account" : "Activate Account"}
+                                                                {u.isActive
+                                                                    ? "Deactivate Account"
+                                                                    : "Activate Account"}
                                                             </button>
                                                             {u.role !== "ADMIN" && (
                                                                 <button
-                                                                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium dark:text-gray-200"
+                                                                    className="w-full px-4 py-2.5 text-left font-medium transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
                                                                     onClick={() => {
-                                                                        const nextRole = u.role === "STUDENT" ? "LECTURER" : "STUDENT";
-                                                                        updateUser({ id: u.id, role: nextRole });
+                                                                        const nextRole =
+                                                                            u.role === "STUDENT"
+                                                                                ? "LECTURER"
+                                                                                : "STUDENT";
+                                                                        updateUser({
+                                                                            id: u.id,
+                                                                            role: nextRole,
+                                                                        });
                                                                         setActiveMenu(null);
                                                                     }}
                                                                     disabled={isPending}
                                                                 >
-                                                                    Change to {u.role === "STUDENT" ? "Lecturer" : "Student"}
+                                                                    Change to{" "}
+                                                                    {u.role === "STUDENT"
+                                                                        ? "Lecturer"
+                                                                        : "Student"}
                                                                 </button>
                                                             )}
                                                         </div>
                                                     )}
                                                 </div>
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     );
-                                })}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
-            </div>
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                )}
+            </Card>
         </div>
     );
 }
