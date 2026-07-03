@@ -36,7 +36,7 @@ export function predictFinalScore(metrics: {
         (contentCompletionRate * 0.1);
 
     // Confidence based on amount of data (heuristic)
-    let confidence = Math.min(85, (averageQuizScore > 0 ? 20 : 0) + (averageAssignmentScore > 0 ? 30 : 0) + (engagementScore > 0 ? 20 : 0) + 15);
+    const confidence = Math.min(85, (averageQuizScore > 0 ? 20 : 0) + (averageAssignmentScore > 0 ? 30 : 0) + (engagementScore > 0 ? 20 : 0) + 15);
 
     return { score: predictedScore, confidence };
 }
