@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { SubmissionStatus, AssessmentType } from "@prisma/client";
+// Prisma enums used as string literals for type safety
+const SubmissionStatus = {
+    SUBMITTED: "SUBMITTED",
+    GRADED: "GRADED",
+} as const;
+
+const AssessmentType = {
+    QUIZ: "QUIZ",
+    ASSIGNMENT: "ASSIGNMENT",
+    EXAM: "EXAM",
+} as const;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();

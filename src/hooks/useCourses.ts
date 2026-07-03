@@ -1,5 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Course, Module, Content } from "@prisma/client";
+
+// Frontend types matching Prisma models
+export type Course = {
+    id: string;
+    code: string;
+    title: string;
+    description: string;
+    semester: string;
+    level: number;
+    unit: number;
+    isPublished: boolean;
+    instructorId: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type Module = {
+    id: string;
+    title: string;
+    description?: string | null;
+    order: number;
+    courseId: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type Content = {
+    id: string;
+    title: string;
+    type: string;
+    url?: string | null;
+    body?: string | null;
+    order: number;
+    moduleId: string;
+    createdAt: string;
+    updatedAt: string;
+};
 
 // Extended types for frontend relationships
 export type CourseWithDetails = Course & {
@@ -53,7 +89,7 @@ export function useEnroll() {
         onSuccess: (_, courseId) => {
             queryClient.invalidateQueries({ queryKey: ["courses"] });
             queryClient.invalidateQueries({ queryKey: ["course", courseId] });
-            queryClient.invalidateQueries({ queryKey: ["analytics"] }); // Refresh student data
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
         },
     });
 }
