@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
 
         // Score distribution (histogram buckets)
         const distribution = { "0-39": 0, "40-49": 0, "50-59": 0, "60-69": 0, "70-100": 0 };
-        grades.forEach(g => {
+        grades.forEach((g) => {
             const t = g.total || 0;
             if (t >= 70) distribution["70-100"]++;
             else if (t >= 60) distribution["60-69"]++;

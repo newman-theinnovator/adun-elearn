@@ -67,7 +67,7 @@ export async function GET() {
                 select: { score: true, assessment: { select: { totalMarks: true } } }
             });
             if (subs.length === 0) return { code: c.code, title: c.title, average: 0 };
-            const avg = subs.reduce((acc, s) => acc + ((s.score! / s.assessment.totalMarks) * 100), 0) / subs.length;
+            const avg = subs.reduce((acc: number, s) => acc + ((s.score! / s.assessment.totalMarks) * 100), 0) / subs.length;
             return { code: c.code, title: c.title, average: parseFloat(avg.toFixed(1)) };
         }));
 

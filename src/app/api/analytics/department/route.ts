@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         let globalPoints = 0;
         let globalUnits = 0;
 
-        allGrades.forEach((g: any) => {
+        allGrades.forEach((g) => {
             if (g.gradePoint !== null && g.course.unit) {
                 globalPoints += g.gradePoint * g.course.unit;
                 globalUnits += g.course.unit;
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
             if (!levelGPA[student.level]) levelGPA[student.level] = { points: 0, units: 0 };
 
-            studentGrades.forEach((g: any) => {
+            studentGrades.forEach((g) => {
                 if (g.gradePoint !== null && g.course.unit) {
                     levelGPA[student.level!].points += g.gradePoint * g.course.unit;
                     levelGPA[student.level!].units += g.course.unit;

@@ -26,7 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
         const gradeDistribution: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
         const semesterGPA: Record<string, { points: number, units: number }> = {};
 
-        grades.forEach((g: any) => {
+        grades.forEach((g) => {
             if (g.gradePoint !== null && g.course.unit) {
                 totalPoints += g.gradePoint * g.course.unit;
                 totalUnits += g.course.unit;
@@ -51,7 +51,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
         const activities = await prisma.activityLog.findMany({
             where: { userId: studentId },
         });
-        const loginCount = activities.filter(a => a.action === 'LOGIN').length;
+        const loginCount = activities.filter((a) => a.action === 'LOGIN').length;
         // Normalize engagement score (heuristic: 50 logins = perfect 100 engagement)
         const engagementScore = Math.min(100, (loginCount / 50) * 100);
 
@@ -62,7 +62,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
 
         // 4. Content Progress
         const progressRecords = await prisma.contentProgress.findMany({ where: { userId: studentId } });
-        const completedContent = progressRecords.filter(p => p.completed).length;
+        const completedContent = progressRecords.filter((p) => p.completed).length;
         const totalTimeSpent = progressRecords.reduce((acc, curr) => acc + curr.timeSpent, 0);
         const contentCompletionRate = Math.min(100, progressRecords.length > 0 ? (completedContent / progressRecords.length) * 100 : 0);
 
@@ -72,15 +72,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ studentI
             include: { assessment: true }
         });
 
-        const quizzes = submissions.filter(s => s.assessment.type === 'QUIZ' && s.score !== null);
-        const assignments = submissions.filter(s => s.assessment.type === 'ASSIGNMENT' && s.score !== null);
+        const quizzes = submissions.filter((s) => s.assessment.type === 'QUIZ' && s.score !== null);
+        const assignments = submissions.filter((s) => s.assessment.type === 'ASSIGNMENT' && s.score !== null);
 
         const averageQuizScore = quizzes.length > 0
-            ? quizzes.reduce((acc: number, curr: any) => acc + (curr.score! / curr.assessment.totalMarks) * 100, 0) / quizzes.length
+            ? quizzes.reduce((acc: number, curr) => acc + (curr.score! / curr.assessment.totalMarks) * 100, 0) / quizzes.length
             : 0;
 
         const averageAssignmentScore = assignments.length > 0
-            ? assignments.reduce((acc: number, curr: any) => acc + (curr.score! / curr.assessment.totalMarks) * 100, 0) / assignments.length
+            ? assignments.reduce((acc: number, curr) => acc + (curr.score! / curr.assessment.totalMarks) * 100, 0) / assignments.length
             : 0;
 
         // Predictions
