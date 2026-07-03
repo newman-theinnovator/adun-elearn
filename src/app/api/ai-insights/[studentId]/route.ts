@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export async function GET(
     request: NextRequest,
     context: { params: Promise<{ studentId: string }> }
 ) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
         const { studentId } = await context.params;
 
         if (!studentId) {
             return NextResponse.json({ error: "Missing studentId" }, { status: 400 });
+        }
+
+        // Students can only view their own insights
+        if (session.user.role === "STUDENT" && session.user.id !== studentId) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const student = await prisma.user.findUnique({
@@ -33,10 +44,10 @@ export async function GET(
         const courseScores: Record<string, { total: number; max: number; name: string }> = {};
 
         // Process Grades
-        student.grades.forEach(g => {
+        student.grades.forEach((g) => {
             if (g.total !== null && g.courseId) {
                 totalScore += g.total;
-                maxPossibleScore += 100; // Assume grades are over 100
+                maxPossibleScore += 100;
                 scoreCount++;
 
                 if (!courseScores[g.courseId]) {
@@ -48,12 +59,12 @@ export async function GET(
         });
 
         // Process Submissions
-        student.submissions.forEach(s => {
+        student.submissions.forEach((s) => {
             if (s.score !== null && s.assessment.totalMarks) {
                 totalScore += s.score;
                 maxPossibleScore += s.assessment.totalMarks;
                 scoreCount++;
-                
+
                 const courseId = s.assessment.courseId;
                 if (!courseScores[courseId]) {
                     courseScores[courseId] = { total: 0, max: 0, name: s.assessment.course.title };
@@ -65,18 +76,17 @@ export async function GET(
 
         let predictedGrade = 0;
         let confidence = 0;
-        let strongestArea = "Pending ...";
-        let areaToImprove = "Pending ...";
+        let strongestArea = "Pending...";
+        let areaToImprove = "Pending...";
 
         if (maxPossibleScore > 0) {
-            // Calculate percentage
             const percentage = (totalScore / maxPossibleScore) * 100;
-            
-            // Generate a smart prediction by weighting recent scores or just doing a small algorithmic projection
-            predictedGrade = Math.min(100, Math.max(0, Math.round(percentage + (Math.random() * 4 - 1)))); 
-            
-            // Confidence increases with more data points
-            confidence = Math.min(95, Math.max(40, 50 + (scoreCount * 3)));
+
+            // Deterministic prediction — no Math.random()
+            predictedGrade = Math.min(100, Math.max(0, Math.round(percentage)));
+
+            // Confidence grows with more data points, capped at 85%
+            confidence = Math.min(85, 15 + (scoreCount > 0 ? 20 : 0) + (scoreCount > 2 ? 20 : 0) + (scoreCount > 5 ? 30 : 0));
 
             let maxAvg = -1;
             let minAvg = 101;
@@ -95,22 +105,21 @@ export async function GET(
                 }
             }
         } else {
-            // New student, no data yet
             predictedGrade = 0;
-            confidence = 15; // Low confidence
+            confidence = 15;
             strongestArea = "N/A (No Data)";
             areaToImprove = "N/A (No Data)";
         }
 
         let explanation = "";
         if (scoreCount === 0) {
-            explanation = "Complete some assessments or wait for grades to start receiving personalized analytics.";
-        } else if (predictedGrade >= 75) {
-            explanation = `You're on an excellent track! Your performance in ${strongestArea} is boosting your overall profile. Keep it up!`;
+            explanation = "Complete some assessments or wait for grades to start receiving personalised analytics.";
+        } else if (predictedGrade >= 70) {
+            explanation = `Excellent trajectory. Your performance in ${strongestArea} is a key strength. Maintain your current engagement level.`;
         } else if (predictedGrade >= 50) {
-            explanation = `You have a solid foundation. Focusing some extra effort on ${areaToImprove} can significantly push your grades higher.`;
+            explanation = `Solid foundation. Targeted effort on ${areaToImprove} can push your overall performance significantly higher.`;
         } else {
-            explanation = `Your current trajectory suggests you need urgent attention in ${areaToImprove}. Consider reaching out to your lecturer.`;
+            explanation = `Your current scores suggest urgent attention is needed in ${areaToImprove}. Reach out to your lecturer for guidance.`;
         }
 
         return NextResponse.json({
