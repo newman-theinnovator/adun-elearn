@@ -46,6 +46,30 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
 
+    /* ADUN brand palette — sampled from the official crest (public/logo.png) */
+    --color-navy-50: #eef1f6;
+    --color-navy-100: #d7deea;
+    --color-navy-200: #b0bdd6;
+    --color-navy-300: #8899c0;
+    --color-navy-400: #5c73a3;
+    --color-navy-500: #3d5482;
+    --color-navy-600: #2c3e63;
+    --color-navy-700: #232f4f;
+    --color-navy-800: #1e2843;
+    --color-navy-900: #171e35;
+    --color-navy-950: #0f1424;
+    --color-crimson-50: #fbeced;
+    --color-crimson-100: #f5cfd2;
+    --color-crimson-200: #e9a3a9;
+    --color-crimson-300: #d97680;
+    --color-crimson-400: #c34e5c;
+    --color-crimson-500: #a72833;
+    --color-crimson-600: #8f2029;
+    --color-crimson-700: #741a22;
+    --color-crimson-800: #5c151b;
+    --color-crimson-900: #451015;
+    --color-crimson-950: #2e0a0e;
+
     /* ADUN Project Variables */
     --font-sans: "Inter", system-ui, -apple-system, sans-serif;
     --color-dash-bg: #f8fafc;

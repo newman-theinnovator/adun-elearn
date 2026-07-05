@@ -34,7 +34,7 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold dark:text-white">My Profile</h1>
 
             <div className="animate-fade-in-up overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div className="relative h-32 bg-gradient-to-r from-blue-900 to-indigo-800">
+                <div className="from-navy-900 to-navy-700 relative h-32 bg-gradient-to-r">
                     <div className="absolute inset-0 bg-white/5 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.2)_100%)]" />
                 </div>
                 <div className="-mt-12 px-6 pb-6">
@@ -55,7 +55,7 @@ export default function ProfilePage() {
                                 {user.department?.name || "General Department"}
                             </p>
                         </div>
-                        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg sm:mt-0 sm:w-auto">
+                        <button className="bg-navy-800 hover:bg-navy-700 mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:mt-0 sm:w-auto">
                             <Edit className="h-4 w-4" /> Edit Profile
                         </button>
                     </div>

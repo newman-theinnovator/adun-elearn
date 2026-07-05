@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { apiSuccess } from "@/lib/api-response";
+import { generateInsightNarrative } from "@/lib/ai-insights";
 
 export async function GET(
     _request: NextRequest,
@@ -118,17 +119,14 @@ export async function GET(
             areaToImprove = "N/A (No Data)";
         }
 
-        let explanation = "";
-        if (scoreCount === 0) {
-            explanation =
-                "Complete some assessments or wait for grades to start receiving personalised analytics.";
-        } else if (predictedGrade >= 70) {
-            explanation = `Excellent trajectory. Your performance in ${strongestArea} is a key strength. Maintain your current engagement level.`;
-        } else if (predictedGrade >= 50) {
-            explanation = `Solid foundation. Targeted effort on ${areaToImprove} can push your overall performance significantly higher.`;
-        } else {
-            explanation = `Your current scores suggest urgent attention is needed in ${areaToImprove}. Reach out to your lecturer for guidance.`;
-        }
+        const explanation = await generateInsightNarrative(studentId, {
+            firstName: student.firstName,
+            predictedGrade,
+            confidence,
+            strongestArea,
+            areaToImprove,
+            scoreCount,
+        });
 
         return apiSuccess({
             predictedGrade,

@@ -72,7 +72,7 @@ export default function GradebookPage() {
 
             {/* Summary */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 to-blue-800 p-6 text-white shadow-lg">
+                <div className="from-navy-900 to-navy-700 relative overflow-hidden rounded-2xl bg-gradient-to-br p-6 text-white shadow-lg">
                     <div className="absolute top-0 right-0 flex h-32 w-32 items-center justify-center rounded-full bg-white/10 blur-2xl">
                         <Award className="h-16 w-16 text-white/10" />
                     </div>

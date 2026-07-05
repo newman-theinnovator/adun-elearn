@@ -11,6 +11,7 @@ const serverSchema = z.object({
     NEXTAUTH_URL: z.string().min(1, "NEXTAUTH_URL is required"),
     RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM_ADDRESS: z.string().optional(),
+    ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 let cachedServerEnv: z.infer<typeof serverSchema> | undefined;

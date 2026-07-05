@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     loginSchema,
-    registerSchema,
+    userAdminCreateSchema,
     courseSchema,
     moduleSchema,
     assessmentSchema,
@@ -23,23 +23,21 @@ describe("loginSchema", () => {
     });
 });
 
-describe("registerSchema", () => {
-    it("defaults role to STUDENT", () => {
-        const result = registerSchema.parse({
+describe("userAdminCreateSchema", () => {
+    it("defaults role to STUDENT and requires no password", () => {
+        const result = userAdminCreateSchema.parse({
             firstName: "Ada",
             lastName: "Lovelace",
             email: "ada@b.com",
-            password: "secret1",
         });
         expect(result.role).toBe("STUDENT");
     });
 
     it("rejects an unknown role", () => {
-        const result = registerSchema.safeParse({
+        const result = userAdminCreateSchema.safeParse({
             firstName: "Ada",
             lastName: "Lovelace",
             email: "ada@b.com",
-            password: "secret1",
             role: "SUPERADMIN",
         });
         expect(result.success).toBe(false);

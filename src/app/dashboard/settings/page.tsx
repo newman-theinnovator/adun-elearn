@@ -186,7 +186,7 @@ export default function SettingsPage() {
                     <button
                         onClick={handleSave}
                         disabled={isPending}
-                        className="flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50"
+                        className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
                     >
                         <Save className="h-4 w-4" />
                         {isPending ? "Saving…" : saved ? "Saved! ✓" : "Save Preferences"}

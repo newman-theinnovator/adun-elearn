@@ -62,13 +62,13 @@ export default function AnalyticsPage() {
                             Track your academic progress and get personalized insights
                         </p>
                     </div>
-                    <button className="flex items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg">
+                    <button className="bg-navy-800 hover:bg-navy-700 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg">
                         <Download className="h-4 w-4" /> Export Report
                     </button>
                 </div>
 
                 {/* Prediction Card */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900 via-blue-900 to-purple-800 p-6 text-white shadow-xl md:p-8">
+                <div className="from-navy-950 via-navy-900 to-navy-800 relative overflow-hidden rounded-2xl bg-gradient-to-r p-6 text-white shadow-xl md:p-8">
                     <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
                     <div className="relative z-10">
                         <div className="mb-4 flex items-center gap-2">
@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
                                 <p className="text-xs font-semibold tracking-wider text-amber-200 uppercase">
                                     Predicted Final Grade
                                 </p>
-                                <p className="mt-2 text-4xl font-black tracking-tight text-amber-400">
+                                <p className="text-crimson-400 mt-2 text-4xl font-black tracking-tight">
                                     {studentData.predictions?.predictedScore || "N/A"}%
                                 </p>
                                 <p className="mt-2 text-[10px] text-amber-200/70">
@@ -248,7 +248,7 @@ export default function AnalyticsPage() {
                         High-level overview of system and student performance.
                     </p>
                 </div>
-                <button className="flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg">
+                <button className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg">
                     <Download className="h-4 w-4" /> Export Report Data
                 </button>
             </div>

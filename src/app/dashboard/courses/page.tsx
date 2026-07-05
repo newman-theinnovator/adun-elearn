@@ -72,7 +72,7 @@ export default function CoursesPage() {
                     </p>
                 </div>
                 {user?.role !== "STUDENT" && (
-                    <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white shadow-md transition-colors hover:bg-blue-800 sm:w-auto">
+                    <button className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-md transition-colors sm:w-auto">
                         <BookOpen className="h-4 w-4" /> Create Course
                     </button>
                 )}

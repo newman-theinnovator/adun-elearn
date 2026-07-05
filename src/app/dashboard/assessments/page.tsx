@@ -191,7 +191,7 @@ export default function AssessmentsPage() {
                                 <button
                                     onClick={handleQuizSubmit}
                                     disabled={submitting}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 py-3.5 font-bold text-white shadow-md transition-colors hover:bg-blue-800 disabled:opacity-50"
+                                    className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-bold text-white shadow-md transition-colors disabled:opacity-50"
                                 >
                                     {submitting ? "Submitting..." : "Submit Answers"}
                                 </button>
@@ -216,7 +216,7 @@ export default function AssessmentsPage() {
                     </p>
                 </div>
                 {user?.role !== "STUDENT" && (
-                    <button className="flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 hover:shadow-lg">
+                    <button className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg">
                         <ClipboardList className="h-4 w-4" /> Create Assessment
                     </button>
                 )}
@@ -228,7 +228,7 @@ export default function AssessmentsPage() {
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold whitespace-nowrap shadow-sm transition-all ${filter === f ? "scale-105 bg-blue-900 text-white" : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"}`}
+                        className={`rounded-lg px-4 py-2 text-sm font-semibold whitespace-nowrap shadow-sm transition-all ${filter === f ? "bg-navy-800 scale-105 text-white" : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"}`}
                     >
                         {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
@@ -353,7 +353,7 @@ export default function AssessmentsPage() {
                                             !sub && (
                                                 <button
                                                     onClick={() => setSelectedQuiz(a.id)}
-                                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg sm:w-auto"
+                                                    className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto"
                                                 >
                                                     Start Quiz <ChevronRight className="h-4 w-4" />
                                                 </button>
@@ -362,7 +362,7 @@ export default function AssessmentsPage() {
                                             a.isPublished &&
                                             user?.role === "STUDENT" &&
                                             !sub && (
-                                                <button className="w-full rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg sm:w-auto">
+                                                <button className="bg-navy-800 hover:bg-navy-700 w-full rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto">
                                                     Upload Work
                                                 </button>
                                             )}

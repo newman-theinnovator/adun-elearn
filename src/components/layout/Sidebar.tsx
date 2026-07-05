@@ -9,10 +9,11 @@ import {
     MessageSquare,
     ClipboardList,
     Award,
-    GraduationCap,
     Settings,
     Users,
 } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { APP_NAME, UNIVERSITY_SHORT_NAME } from "@/lib/branding";
 
 interface SidebarProps {
     userRole: string;
@@ -74,15 +75,13 @@ export function Sidebar({ userRole, isOpen, setIsOpen }: SidebarProps) {
                         className="flex items-center gap-3"
                         onClick={() => setIsOpen(false)}
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-900 to-blue-700">
-                            <GraduationCap className="h-6 w-6 text-amber-400" />
-                        </div>
+                        <Logo size="sm" />
                         <div>
-                            <h1 className="bg-gradient-to-r from-blue-900 to-blue-600 bg-clip-text text-lg leading-tight font-bold text-transparent">
-                                ADUN E-Learn
+                            <h1 className="from-navy-800 to-crimson-600 bg-gradient-to-r bg-clip-text text-lg leading-tight font-bold text-transparent">
+                                {APP_NAME}
                             </h1>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                                Admiralty University
+                                {UNIVERSITY_SHORT_NAME}
                             </p>
                         </div>
                     </Link>
@@ -102,8 +101,8 @@ export function Sidebar({ userRole, isOpen, setIsOpen }: SidebarProps) {
                                 onClick={() => setIsOpen(false)}
                                 className={`group animate-fade-in-up flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
                                     isActive
-                                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
-                                        : "text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+                                        ? "from-navy-800 to-navy-700 shadow-navy-500/30 bg-gradient-to-r text-white shadow-lg"
+                                        : "hover:text-navy-700 text-gray-600 hover:bg-white hover:shadow-sm dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
                                 }`}
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >

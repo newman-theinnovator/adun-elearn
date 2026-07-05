@@ -93,8 +93,8 @@ export default function CourseDetailPage() {
     return (
         <div className="mx-auto max-w-5xl space-y-6">
             {/* Course Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900 to-blue-700 p-6 text-white shadow-xl">
-                <div className="absolute top-0 right-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full bg-amber-400/10 blur-2xl" />
+            <div className="from-navy-900 to-navy-700 relative overflow-hidden rounded-2xl bg-gradient-to-br p-6 text-white shadow-xl">
+                <div className="bg-crimson-400/10 absolute top-0 right-0 h-48 w-48 translate-x-1/4 -translate-y-1/4 rounded-full blur-2xl" />
                 <div className="relative z-10">
                     <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function CourseDetailPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                                     Join the course conversation
                                 </p>
-                                <button className="scale-active-95 flex items-center gap-2 rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-800">
+                                <button className="scale-active-95 bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-md transition-all">
                                     <MessageSquare className="h-4 w-4" /> New Thread
                                 </button>
                             </div>

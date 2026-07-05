@@ -105,7 +105,7 @@ export function LecturerDashboard() {
             </div>
 
             {/* Welcome */}
-            <div className="rounded-2xl bg-gradient-to-r from-blue-800 to-indigo-800 p-5 text-white shadow-xl sm:p-6">
+            <div className="from-navy-800 to-navy-700 rounded-2xl bg-gradient-to-r p-5 text-white shadow-xl sm:p-6">
                 <h1 className="text-xl font-bold sm:text-2xl">
                     {user.firstName} {user.lastName}
                 </h1>

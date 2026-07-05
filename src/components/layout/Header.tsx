@@ -69,7 +69,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                         {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                     </button>
                     <div>
-                        <h2 className="bg-gradient-to-r from-blue-900 to-indigo-600 bg-clip-text text-xl font-bold text-transparent capitalize dark:from-blue-400 dark:to-indigo-300">
+                        <h2 className="from-navy-800 to-crimson-600 dark:from-navy-300 dark:to-crimson-400 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent capitalize">
                             {title}
                         </h2>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -127,7 +127,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                         Notifications
                                     </h3>
                                     {unreadCount > 0 && (
-                                        <span className="text-xs font-medium text-blue-600">
+                                        <span className="text-crimson-600 text-xs font-medium">
                                             {unreadCount} unread
                                         </span>
                                     )}
@@ -141,7 +141,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                         notificationList.slice(0, 6).map((n) => (
                                             <div
                                                 key={n.id}
-                                                className={`border-b border-gray-50 px-4 py-3 text-sm dark:border-gray-700 ${!n.isRead ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}
+                                                className={`border-b border-gray-50 px-4 py-3 text-sm dark:border-gray-700 ${!n.isRead ? "bg-navy-50 dark:bg-navy-900/20" : ""}`}
                                             >
                                                 <p className="line-clamp-1 font-medium dark:text-white">
                                                     {n.title || n.message}
@@ -178,7 +178,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                 <p className="text-sm leading-tight font-semibold">
                                     {user.firstName} {user.lastName}
                                 </p>
-                                <p className="text-[10px] font-medium tracking-wider text-blue-600 uppercase dark:text-blue-400">
+                                <p className="text-crimson-600 dark:text-crimson-400 text-[10px] font-medium tracking-wider uppercase">
                                     {user.role}
                                 </p>
                             </div>
@@ -204,7 +204,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                     <Link
                                         href="/dashboard/profile"
                                         onClick={() => setShowUserMenu(false)}
-                                        className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-700/80"
+                                        className="hover:bg-navy-50 hover:text-navy-700 flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors dark:hover:bg-gray-700/80"
                                     >
                                         <UserIcon className="h-4 w-4" /> My Profile
                                     </Link>

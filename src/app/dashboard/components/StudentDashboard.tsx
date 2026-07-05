@@ -123,7 +123,7 @@ export function StudentDashboard() {
             </div>
 
             {/* Welcome Banner */}
-            <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-800 to-purple-800 p-5 text-white shadow-2xl shadow-indigo-900/20 sm:rounded-3xl sm:p-8">
+            <div className="from-navy-950 via-navy-900 to-navy-800 shadow-navy-900/20 relative isolate overflow-hidden rounded-2xl bg-gradient-to-r p-5 text-white shadow-2xl sm:rounded-3xl sm:p-8">
                 <div className="animate-float absolute -top-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-br from-amber-400/30 to-rose-400/30 blur-3xl" />
                 <div
                     className="animate-float absolute -bottom-20 left-10 h-60 w-60 rounded-full bg-gradient-to-tr from-cyan-400/30 to-blue-400/30 blur-3xl"
@@ -149,7 +149,7 @@ export function StudentDashboard() {
                             {aiLoading ? (
                                 <Skeleton className="mt-1 h-8 w-16 bg-white/20" />
                             ) : (
-                                <p className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-xl font-black text-transparent sm:text-3xl">
+                                <p className="from-crimson-300 to-crimson-500 bg-gradient-to-r bg-clip-text text-xl font-black text-transparent sm:text-3xl">
                                     {aiInsights?.predictedGrade || 0}%
                                 </p>
                             )}

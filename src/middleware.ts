@@ -26,14 +26,22 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // NextAuth's own endpoints (session, csrf, callback, signout, etc.) must always be
+    // reachable regardless of auth state — redirecting them away breaks session polling
+    // for already-logged-in users (SessionProvider calls GET /api/auth/session on every
+    // page and periodically; redirecting it to an HTML page breaks its JSON parsing).
+    if (pathname.startsWith("/api/auth")) {
+        return NextResponse.next();
+    }
+
     const session = await auth();
 
-    // Public paths — no auth required
+    // Public pages — no auth required
     const isPublicPath =
+        pathname === "/" ||
         pathname.startsWith("/login") ||
         pathname.startsWith("/register") ||
-        pathname.startsWith("/forgot-password") ||
-        pathname.startsWith("/api/auth");
+        pathname.startsWith("/forgot-password");
 
     // Already logged in, trying to access login/register → redirect to dashboard
     if (isPublicPath && session) {

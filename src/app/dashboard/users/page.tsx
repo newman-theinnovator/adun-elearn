@@ -10,10 +10,12 @@ import {
     GraduationCap,
     BookOpen,
     MoreVertical,
+    UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -30,6 +32,14 @@ import {
     TableHead,
     TableCell,
 } from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 interface UserRecord {
     id: string;
@@ -71,6 +81,219 @@ function useUpdateUser() {
     });
 }
 
+type NewUserInput = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    level?: number;
+    matricNumber?: string;
+    staffId?: string;
+};
+
+function useCreateUser() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: NewUserInput) => {
+            const res = await fetch("/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to create user");
+            }
+            return res.json();
+        },
+        onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+    });
+}
+
+function CreateUserDialog({
+    open,
+    onOpenChange,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [role, setRole] = useState("STUDENT");
+    const [level, setLevel] = useState("");
+    const [matricNumber, setMatricNumber] = useState("");
+    const [staffId, setStaffId] = useState("");
+    const [error, setError] = useState("");
+
+    const { mutate: createUser, isPending } = useCreateUser();
+
+    const reset = () => {
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setRole("STUDENT");
+        setLevel("");
+        setMatricNumber("");
+        setStaffId("");
+        setError("");
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        createUser(
+            {
+                firstName,
+                lastName,
+                email,
+                role,
+                level: level ? Number(level) : undefined,
+                matricNumber: matricNumber || undefined,
+                staffId: staffId || undefined,
+            },
+            {
+                onSuccess: () => {
+                    reset();
+                    onOpenChange(false);
+                },
+                onError: (err: Error) => setError(err.message),
+            }
+        );
+    };
+
+    return (
+        <Dialog
+            open={open}
+            onOpenChange={(next) => {
+                if (!next) reset();
+                onOpenChange(next);
+            }}
+        >
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create User</DialogTitle>
+                    <DialogDescription>
+                        A temporary password will be emailed to the new account.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 p-5">
+                    {error && (
+                        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {error}
+                        </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label htmlFor="new-user-first-name" className="mb-2 normal-case">
+                                First Name
+                            </Label>
+                            <Input
+                                id="new-user-first-name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="new-user-last-name" className="mb-2 normal-case">
+                                Last Name
+                            </Label>
+                            <Input
+                                id="new-user-last-name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <Label htmlFor="new-user-email" className="mb-2 normal-case">
+                            Email
+                        </Label>
+                        <Input
+                            id="new-user-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="new-user-role" className="mb-2 normal-case">
+                            Role
+                        </Label>
+                        <Select value={role} onValueChange={setRole}>
+                            <SelectTrigger id="new-user-role">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="STUDENT">Student</SelectItem>
+                                <SelectItem value="LECTURER">Lecturer</SelectItem>
+                                <SelectItem value="ADMIN">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {role === "STUDENT" && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label htmlFor="new-user-level" className="mb-2 normal-case">
+                                    Level
+                                </Label>
+                                <Input
+                                    id="new-user-level"
+                                    type="number"
+                                    value={level}
+                                    onChange={(e) => setLevel(e.target.value)}
+                                    placeholder="100–400"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="new-user-matric" className="mb-2 normal-case">
+                                    Matric Number
+                                </Label>
+                                <Input
+                                    id="new-user-matric"
+                                    value={matricNumber}
+                                    onChange={(e) => setMatricNumber(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {role === "LECTURER" && (
+                        <div>
+                            <Label htmlFor="new-user-staff-id" className="mb-2 normal-case">
+                                Staff ID
+                            </Label>
+                            <Input
+                                id="new-user-staff-id"
+                                value={staffId}
+                                onChange={(e) => setStaffId(e.target.value)}
+                            />
+                        </div>
+                    )}
+                    <DialogFooter className="-mx-5 mt-2 -mb-5">
+                        <button
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isPending || !firstName || !lastName || !email}
+                            className="bg-navy-800 hover:bg-navy-700 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
+                        >
+                            {isPending ? "Creating…" : "Create User"}
+                        </button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 const ROLE_ICON: Record<string, React.ElementType> = {
     STUDENT: BookOpen,
     LECTURER: GraduationCap,
@@ -81,6 +304,7 @@ export default function UsersPage() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
 
     const { data: users, isLoading } = useUsers(roleFilter || undefined);
     const { mutate: updateUser, isPending } = useUpdateUser();
@@ -105,7 +329,15 @@ export default function UsersPage() {
                         {users?.length || 0} total accounts
                     </p>
                 </div>
+                <button
+                    onClick={() => setCreateOpen(true)}
+                    className="bg-navy-800 hover:bg-navy-700 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                    <UserPlus className="h-4 w-4" /> Create User
+                </button>
             </div>
+
+            <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
 
             {/* Filters */}
             <div className="flex flex-col gap-3 sm:flex-row">

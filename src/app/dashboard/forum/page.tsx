@@ -108,7 +108,7 @@ function NewPostModal({
                         <button
                             type="submit"
                             disabled={isPending || !title.trim() || !body.trim() || !courseId}
-                            className="flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50"
+                            className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
                         >
                             {isPending ? (
                                 "Posting…"
@@ -265,7 +265,7 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
                             <button
                                 onClick={handleReply}
                                 disabled={replying || !replyContent.trim()}
-                                className="flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 disabled:opacity-50"
+                                className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
                             >
                                 {replying ? (
                                     "Posting..."
@@ -325,7 +325,7 @@ export default function ForumPage() {
                     </div>
                     <button
                         onClick={() => setShowNewPost(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800 hover:shadow-lg sm:w-auto"
+                        className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg sm:w-auto"
                     >
                         <Plus className="h-4 w-4" /> New Discussion
                     </button>
@@ -343,7 +343,7 @@ export default function ForumPage() {
                             </p>
                             <button
                                 onClick={() => setShowNewPost(true)}
-                                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-800"
+                                className="bg-navy-800 hover:bg-navy-700 inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all"
                             >
                                 <Plus className="h-4 w-4" /> Start a Discussion
                             </button>

@@ -32,10 +32,10 @@ export function DashboardLayoutClient({ children, user }: DashboardLayoutClientP
         <div className="flex min-h-screen overflow-x-hidden bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-white">
             <Sidebar userRole={user.role} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-            <div className="relative flex min-w-0 flex-1 flex-col bg-gradient-to-br from-transparent to-blue-50/30 dark:to-blue-900/10">
+            <div className="to-navy-50/30 dark:to-navy-900/10 relative flex min-w-0 flex-1 flex-col bg-gradient-to-br from-transparent">
                 {/* Background Decorative Blobs */}
-                <div className="pointer-events-none absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-blue-400/10 blur-3xl dark:bg-blue-500/5" />
-                <div className="pointer-events-none absolute bottom-0 left-0 -z-10 h-[400px] w-[400px] rounded-full bg-purple-400/10 blur-3xl dark:bg-purple-500/5" />
+                <div className="bg-navy-400/10 dark:bg-navy-500/5 pointer-events-none absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full blur-3xl" />
+                <div className="bg-crimson-400/10 dark:bg-crimson-500/5 pointer-events-none absolute bottom-0 left-0 -z-10 h-[400px] w-[400px] rounded-full blur-3xl" />
 
                 <Header user={user} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 

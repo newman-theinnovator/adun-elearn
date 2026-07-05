@@ -158,16 +158,16 @@ export function AdminDashboard() {
                         <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                         Live &bull; {onlineUsers} {onlineUsers === 1 ? "user" : "users"} online
                     </div>
-                    <div className="flex overflow-hidden rounded-lg bg-blue-900 shadow-md">
+                    <div className="bg-navy-800 flex overflow-hidden rounded-lg shadow-md">
                         <button
                             onClick={handleExportPDF}
-                            className="flex items-center gap-2 border-r border-blue-800 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-800 focus:outline-none sm:text-sm"
+                            className="hover:bg-navy-700 flex items-center gap-2 border-r border-blue-800 px-3 py-2 text-xs font-medium text-white transition-colors focus:outline-none sm:text-sm"
                         >
                             <FileText className="h-4 w-4" /> PDF
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-800 focus:outline-none sm:text-sm"
+                            className="hover:bg-navy-700 flex items-center gap-2 px-3 py-2 text-xs font-medium text-white transition-colors focus:outline-none sm:text-sm"
                         >
                             <Table className="h-4 w-4" /> CSV
                         </button>

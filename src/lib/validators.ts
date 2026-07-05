@@ -5,11 +5,10 @@ export const loginSchema = z.object({
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-export const registerSchema = z.object({
+export const userAdminCreateSchema = z.object({
     firstName: z.string().min(2, { message: "First name is required" }),
     lastName: z.string().min(2, { message: "Last name is required" }),
     email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).default("STUDENT"),
     level: z.number().optional(),
     matricNumber: z.string().optional(),
@@ -70,8 +69,6 @@ export const activityLogSchema = z.object({
     action: z.string().min(1, { message: "Action is required" }),
     metadata: z.record(z.string(), z.any()).optional(),
 });
-
-export const userCreateSchema = registerSchema;
 
 export const userUpdateSchema = z.object({
     role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).optional(),
