@@ -67,6 +67,7 @@ model User {
   forumReplies     ForumReply[]
   notifications    Notification[]
   activityLogs     ActivityLog[]
+  contentProgress  ContentProgress[]
 
   @@map("users")
 }
@@ -94,6 +95,7 @@ model Course {
   announcements Announcement[]
   grades       Grade[]
 
+  @@index([instructorId])
   @@map("courses")
 }
 
@@ -107,6 +109,7 @@ model Module {
   contents    Content[]
   createdAt   DateTime @default(now())
 
+  @@index([courseId])
   @@map("modules")
 }
 
@@ -123,6 +126,7 @@ model Content {
   progress  ContentProgress[]
   createdAt DateTime    @default(now())
 
+  @@index([moduleId])
   @@map("contents")
 }
 
@@ -133,9 +137,11 @@ model ContentProgress {
   completed  Boolean  @default(false)
   timeSpent  Int      @default(0) // seconds
   lastAccessed DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentId])
+  @@index([contentId])
   @@map("content_progress")
 }
 
@@ -150,6 +156,7 @@ model Enrollment {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@index([courseId])
   @@map("enrollments")
 }
 
@@ -169,6 +176,7 @@ model Assessment {
   submissions Submission[]
   createdAt   DateTime       @default(now())
 
+  @@index([courseId])
   @@map("assessments")
 }
 
@@ -184,6 +192,7 @@ model Question {
   assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   answers      Answer[]
 
+  @@index([assessmentId])
   @@map("questions")
 }
 
@@ -203,6 +212,7 @@ model Submission {
   answers    Answer[]
 
   @@unique([userId, assessmentId])
+  @@index([assessmentId])
   @@map("submissions")
 }
 
@@ -218,6 +228,7 @@ model Answer {
   question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([submissionId, questionId])
+  @@index([questionId])
   @@map("answers")
 }
 
@@ -238,6 +249,7 @@ model Grade {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@index([courseId])
   @@map("grades")
 }
 
@@ -255,6 +267,8 @@ model ForumPost {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
+  @@index([courseId])
+  @@index([authorId])
   @@map("forum_posts")
 }
 
@@ -268,6 +282,8 @@ model ForumReply {
   likes     Int       @default(0)
   createdAt DateTime  @default(now())
 
+  @@index([postId])
+  @@index([authorId])
   @@map("forum_replies")
 }
 
@@ -279,6 +295,7 @@ model Announcement {
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
+  @@index([courseId])
   @@map("announcements")
 }
 
@@ -292,6 +309,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
+  @@index([userId, isRead])
   @@map("notifications")
 }
 
@@ -303,5 +321,6 @@ model ActivityLog {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
+  @@index([userId])
   @@map("activity_logs")
 }

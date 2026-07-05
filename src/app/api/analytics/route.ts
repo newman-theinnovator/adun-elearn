@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess } from "@/lib/api-response";
 
 export async function GET() {
     const session = await auth();
@@ -27,7 +28,7 @@ export async function GET() {
             avgGrade: Number(item._avg.total?.toFixed(1)) || 0,
         }));
 
-        return NextResponse.json(formatted);
+        return apiSuccess(formatted);
     } catch (error) {
         console.error("Analytics error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

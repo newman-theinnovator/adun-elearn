@@ -1,20 +1,19 @@
-import * as z from "zod"
+import * as z from "zod";
 
 export const loginSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-})
+});
 
-export const registerSchema = z.object({
+export const userAdminCreateSchema = z.object({
     firstName: z.string().min(2, { message: "First name is required" }),
     lastName: z.string().min(2, { message: "Last name is required" }),
     email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).default("STUDENT"),
     level: z.number().optional(),
     matricNumber: z.string().optional(),
-    staffId: z.string().optional()
-})
+    staffId: z.string().optional(),
+});
 
 export const courseSchema = z.object({
     code: z.string().min(3),
@@ -23,14 +22,14 @@ export const courseSchema = z.object({
     semester: z.string(),
     level: z.number().min(100).max(500),
     unit: z.number().min(1).max(6),
-    isPublished: z.boolean().default(false)
-})
+    isPublished: z.boolean().default(false),
+});
 
 export const moduleSchema = z.object({
     title: z.string().min(3),
     description: z.string().optional(),
-    order: z.number().min(1)
-})
+    order: z.number().min(1),
+});
 
 export const assessmentSchema = z.object({
     title: z.string().min(3),
@@ -40,5 +39,43 @@ export const assessmentSchema = z.object({
     passMark: z.number().min(0),
     duration: z.number().nullable(),
     dueDate: z.string().nullable(),
-    isPublished: z.boolean().default(false)
-})
+    isPublished: z.boolean().default(false),
+});
+
+export const forumPostSchema = z.object({
+    title: z.string().min(1, { message: "Title is required" }),
+    body: z.string().min(1, { message: "Body is required" }),
+    courseId: z.string().min(1, { message: "Course is required" }),
+});
+
+export const forumReplySchema = z.object({
+    body: z.string().min(1, { message: "Reply content is required" }),
+});
+
+export const gradeUpdateSchema = z.object({
+    id: z.string().min(1, { message: "Grade id is required" }),
+    ca1: z.number().nullable().optional(),
+    ca2: z.number().nullable().optional(),
+    exam: z.number().nullable().optional(),
+});
+
+export const settingsSchema = z.object({
+    emailNotifications: z.boolean().optional(),
+    forumAlerts: z.boolean().optional(),
+    gradeAlerts: z.boolean().optional(),
+});
+
+export const activityLogSchema = z.object({
+    action: z.string().min(1, { message: "Action is required" }),
+    metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const userUpdateSchema = z.object({
+    role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).optional(),
+    isActive: z.boolean().optional(),
+});
+
+export const assessmentSubmitSchema = z.object({
+    answers: z.record(z.string(), z.string()).optional(),
+    fileUrl: z.string().nullable().optional(),
+});

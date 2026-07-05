@@ -1,16 +1,18 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { userUpdateSchema } from "@/lib/validators";
+import * as z from "zod";
+import { apiSuccess, apiError, validationError } from "@/lib/api-response";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session || session.user?.role !== "ADMIN") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+        return apiError(403, "Unauthorized");
     }
 
     try {
         const body = await req.json();
-        const { role, isActive } = body;
+        const { role, isActive } = userUpdateSchema.parse(body);
         const { id } = await params;
 
         const updatedUser = await prisma.user.update({
@@ -26,20 +28,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 lastName: true,
                 role: true,
                 isActive: true,
-            }
+            },
         });
 
-        return NextResponse.json(updatedUser);
+        return apiSuccess(updatedUser);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return validationError(error);
+        }
         console.error("Error updating user:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session || session.user?.role !== "ADMIN") {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+        return apiError(403, "Unauthorized");
     }
 
     try {
@@ -51,9 +56,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             data: { isActive: false },
         });
 
-        return NextResponse.json({ message: "User deactivated successfully" });
+        return apiSuccess({ message: "User deactivated successfully" });
     } catch (error) {
         console.error("Error deleting user:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

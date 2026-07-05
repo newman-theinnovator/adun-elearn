@@ -1,17 +1,19 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { forumPostSchema } from "@/lib/validators";
+import * as z from "zod";
+import { apiSuccess, unauthorized, validationError, apiError } from "@/lib/api-response";
 
 export async function GET(req: Request) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId");
     const isSpecificCourse = courseId && courseId !== "all";
 
     try {
-        let where: any = {};
+        const where: any = {};
 
         if (isSpecificCourse) {
             where.courseId = courseId;
@@ -24,42 +26,37 @@ export async function GET(req: Request) {
         const posts = await prisma.forumPost.findMany({
             where,
             include: {
-                author: { select: { firstName: true, lastName: true, role: true, profileImage: true } },
+                author: {
+                    select: { firstName: true, lastName: true, role: true, profileImage: true },
+                },
                 course: { select: { code: true } },
-                _count: { select: { replies: true } }
+                _count: { select: { replies: true } },
             },
-            orderBy: [
-                { isPinned: "desc" },
-                { createdAt: "desc" }
-            ]
+            orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         });
 
-        return NextResponse.json(posts);
+        return apiSuccess(posts);
     } catch (error) {
         console.error("Error fetching forum posts:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     try {
         const body = await req.json();
-        const { title, body: content, courseId } = body;
-
-        if (!title || !content || !courseId) {
-            return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
-        }
+        const parsed = forumPostSchema.parse(body);
 
         const post = await prisma.forumPost.create({
             data: {
-                title,
-                body: content,
-                courseId,
-                authorId: session.user.id
-            }
+                title: parsed.title,
+                body: parsed.body,
+                courseId: parsed.courseId,
+                authorId: session.user.id,
+            },
         });
 
         // Award immediate minor engagement activity
@@ -67,13 +64,16 @@ export async function POST(req: Request) {
             data: {
                 userId: session.user.id,
                 action: "CREATE_FORUM_POST",
-                metadata: { courseId, postId: post.id }
-            }
+                metadata: { courseId: parsed.courseId, postId: post.id },
+            },
         });
 
-        return NextResponse.json(post, { status: 201 });
+        return apiSuccess(post, 201);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return validationError(error);
+        }
         console.error("Error creating forum post:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

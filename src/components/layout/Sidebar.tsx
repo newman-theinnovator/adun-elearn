@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    LayoutDashboard, BookOpen, BarChart3, MessageSquare,
-    User as UserIcon, ClipboardList, Award, GraduationCap,
-    Settings, Users
+    LayoutDashboard,
+    BookOpen,
+    BarChart3,
+    MessageSquare,
+    ClipboardList,
+    Award,
+    Settings,
+    Users,
 } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { APP_NAME, UNIVERSITY_SHORT_NAME } from "@/lib/branding";
 
 interface SidebarProps {
     userRole: string;
@@ -44,50 +51,64 @@ export function Sidebar({ userRole, isOpen, setIsOpen }: SidebarProps) {
         { href: "/dashboard/settings", label: "Settings", icon: Settings },
     ];
 
-    const navItems = userRole === "ADMIN" ? adminNav : userRole === "LECTURER" ? lecturerNav : studentNav;
+    const navItems =
+        userRole === "ADMIN" ? adminNav : userRole === "LECTURER" ? lecturerNav : studentNav;
 
     return (
         <>
             {/* Mobile Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    className="fixed inset-0 z-40 bg-black/50 lg:hidden"
                     onClick={() => setIsOpen(false)}
                 />
             )}
 
             {/* Sidebar Content */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto ${isOpen ? "translate-x-0" : "-translate-x-full"} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col`}>
+            <aside
+                className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:static lg:inset-auto lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800`}
+            >
                 {/* Logo */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setIsOpen(false)}>
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center">
-                            <GraduationCap className="w-6 h-6 text-amber-400" />
-                        </div>
+                <div className="border-b border-gray-200 p-4 dark:border-gray-700">
+                    <Link
+                        href="/dashboard"
+                        className="flex items-center gap-3"
+                        onClick={() => setIsOpen(false)}
+                    >
+                        <Logo size="sm" />
                         <div>
-                            <h1 className="font-bold text-lg leading-tight bg-gradient-to-r from-blue-900 to-blue-600 bg-clip-text text-transparent">ADUN E-Learn</h1>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400">Admiralty University</p>
+                            <h1 className="from-navy-800 to-crimson-600 bg-gradient-to-r bg-clip-text text-lg leading-tight font-bold text-transparent">
+                                {APP_NAME}
+                            </h1>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                {UNIVERSITY_SHORT_NAME}
+                            </p>
                         </div>
                     </Link>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+                <nav className="flex-1 space-y-2 overflow-y-auto p-3">
                     {navItems.map((item, index) => {
-                        const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                        const isActive =
+                            pathname === item.href ||
+                            (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setIsOpen(false)}
-                                className={`group w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 animate-fade-in-up hover:scale-[1.02] ${isActive
-                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
-                                    : "text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm hover:text-blue-600 dark:hover:text-white"
-                                    }`}
+                                className={`group animate-fade-in-up flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
+                                    isActive
+                                        ? "from-navy-800 to-navy-700 shadow-navy-500/30 bg-gradient-to-r text-white shadow-lg"
+                                        : "hover:text-navy-700 text-gray-600 hover:bg-white hover:shadow-sm dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+                                }`}
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
-                                <item.icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? "" : "text-gray-400"}`} />
+                                <item.icon
+                                    className={`h-5 w-5 transition-transform group-hover:scale-110 ${isActive ? "" : "text-gray-400"}`}
+                                />
                                 {item.label}
                             </Link>
                         );

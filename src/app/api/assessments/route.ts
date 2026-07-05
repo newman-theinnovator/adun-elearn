@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { assessmentSchema } from "@/lib/validators";
 import * as z from "zod";
+import {
+    apiSuccess,
+    unauthorized,
+    forbidden,
+    notFound,
+    validationError,
+    apiError,
+} from "@/lib/api-response";
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     try {
         const isStudent = session.user.role === "STUDENT";
@@ -18,44 +25,45 @@ export async function GET(req: Request) {
                 where: {
                     isPublished: true,
                     course: {
-                        enrollments: { some: { userId: session.user.id } }
-                    }
+                        enrollments: { some: { userId: session.user.id } },
+                    },
                 },
                 include: {
                     course: { select: { code: true, title: true } },
                     submissions: {
-                        where: { userId: session.user.id }
-                    }
+                        where: { userId: session.user.id },
+                    },
                 },
-                orderBy: { dueDate: 'asc' }
+                orderBy: { dueDate: "asc" },
             });
         } else {
             // Lecturers see all assessments for their courses. Admins see all.
-            const where = session.user.role === "LECTURER"
-                ? { course: { instructorId: session.user.id } }
-                : {};
+            const where =
+                session.user.role === "LECTURER"
+                    ? { course: { instructorId: session.user.id } }
+                    : {};
 
             assessments = await prisma.assessment.findMany({
                 where,
                 include: {
                     course: { select: { code: true, title: true } },
-                    _count: { select: { submissions: true } }
+                    _count: { select: { submissions: true } },
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: "desc" },
             });
         }
 
-        return NextResponse.json(assessments);
+        return apiSuccess(assessments);
     } catch (error) {
         console.error("Error fetching assessments:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }
 
 export async function POST(req: Request) {
     const session = await auth();
     if (!session || (session.user.role !== "LECTURER" && session.user.role !== "ADMIN")) {
-        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        return forbidden();
     }
 
     try {
@@ -66,10 +74,10 @@ export async function POST(req: Request) {
 
         // Verify course ownership
         const course = await prisma.course.findUnique({ where: { id: courseId } });
-        if (!course) return NextResponse.json({ message: "Course not found" }, { status: 404 });
+        if (!course) return notFound("Course not found");
 
         if (session.user.role !== "ADMIN" && course.instructorId !== session.user.id) {
-            return NextResponse.json({ message: "Forbidden: Not the course instructor" }, { status: 403 });
+            return forbidden("Forbidden: Not the course instructor");
         }
 
         const assessment = await prisma.assessment.create({
@@ -78,26 +86,28 @@ export async function POST(req: Request) {
                 courseId,
                 dueDate: parsedData.dueDate ? new Date(parsedData.dueDate) : null,
                 // Create questions inline if provided
-                questions: questions ? {
-                    create: questions.map((q: any) => ({
-                        text: q.text,
-                        type: q.type,
-                        options: q.options || [],
-                        correctAnswer: q.correctAnswer,
-                        marks: q.marks || 1,
-                        order: q.order || 1
-                    }))
-                } : undefined
+                questions: questions
+                    ? {
+                          create: questions.map((q: any) => ({
+                              text: q.text,
+                              type: q.type,
+                              options: q.options || [],
+                              correctAnswer: q.correctAnswer,
+                              marks: q.marks || 1,
+                              order: q.order || 1,
+                          })),
+                      }
+                    : undefined,
             },
-            include: { questions: true }
+            include: { questions: true },
         });
 
-        return NextResponse.json(assessment, { status: 201 });
+        return apiSuccess(assessment, 201);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ message: "Validation error", errors: error.issues }, { status: 400 });
+            return validationError(error);
         }
         console.error("Error creating assessment:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

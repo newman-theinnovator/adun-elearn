@@ -29,27 +29,17 @@ export function DashboardLayoutClient({ children, user }: DashboardLayoutClientP
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
     return (
-        <div className="min-h-screen flex overflow-x-hidden bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors duration-300">
-            <Sidebar
-                userRole={user.role}
-                isOpen={sidebarOpen}
-                setIsOpen={setSidebarOpen}
-            />
+        <div className="flex min-h-screen overflow-x-hidden bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-white">
+            <Sidebar userRole={user.role} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-            <div className="flex-1 flex flex-col min-w-0 bg-gradient-to-br from-transparent to-blue-50/30 dark:to-blue-900/10 relative">
+            <div className="to-navy-50/30 dark:to-navy-900/10 relative flex min-w-0 flex-1 flex-col bg-gradient-to-br from-transparent">
                 {/* Background Decorative Blobs */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-400/10 dark:bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-400/10 dark:bg-purple-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+                <div className="bg-navy-400/10 dark:bg-navy-500/5 pointer-events-none absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full blur-3xl" />
+                <div className="bg-crimson-400/10 dark:bg-crimson-500/5 pointer-events-none absolute bottom-0 left-0 -z-10 h-[400px] w-[400px] rounded-full blur-3xl" />
 
-                <Header
-                    user={user}
-                    sidebarOpen={sidebarOpen}
-                    setSidebarOpen={setSidebarOpen}
-                />
+                <Header user={user} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-                <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-                    {children}
-                </main>
+                <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
             </div>
         </div>
     );

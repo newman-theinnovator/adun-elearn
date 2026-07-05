@@ -25,18 +25,30 @@ export function predictFinalScore(metrics: {
     forumParticipationScore: number;
     contentCompletionRate: number;
 }): { score: number; confidence: number } {
-    const { averageQuizScore, averageAssignmentScore, engagementScore, forumParticipationScore, contentCompletionRate } = metrics;
+    const {
+        averageQuizScore,
+        averageAssignmentScore,
+        engagementScore,
+        forumParticipationScore,
+        contentCompletionRate,
+    } = metrics;
 
     // Weights: Quiz 30%, Assignment 40%, Engagement 15%, Forum 5%, Content 10%
     const predictedScore =
-        (averageQuizScore * 0.3) +
-        (averageAssignmentScore * 0.4) +
-        (engagementScore * 0.15) +
-        (forumParticipationScore * 0.05) +
-        (contentCompletionRate * 0.1);
+        averageQuizScore * 0.3 +
+        averageAssignmentScore * 0.4 +
+        engagementScore * 0.15 +
+        forumParticipationScore * 0.05 +
+        contentCompletionRate * 0.1;
 
     // Confidence based on amount of data (heuristic)
-    const confidence = Math.min(85, (averageQuizScore > 0 ? 20 : 0) + (averageAssignmentScore > 0 ? 30 : 0) + (engagementScore > 0 ? 20 : 0) + 15);
+    const confidence = Math.min(
+        85,
+        (averageQuizScore > 0 ? 20 : 0) +
+            (averageAssignmentScore > 0 ? 30 : 0) +
+            (engagementScore > 0 ? 20 : 0) +
+            15
+    );
 
     return { score: predictedScore, confidence };
 }

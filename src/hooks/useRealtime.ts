@@ -13,7 +13,8 @@ export function useRealtime(userId: string) {
         const supabase = createClient();
 
         // 1. Setup Channels for CDC
-        const gradeChannel = supabase.channel("realtime-grades")
+        const gradeChannel = supabase
+            .channel("realtime-grades")
             .on("postgres_changes", { event: "*", schema: "public", table: "grades" }, () => {
                 console.log("Realtime: Grades updated, refreshing analytics...");
                 queryClient.invalidateQueries({ queryKey: ["analytics"] });
@@ -22,7 +23,8 @@ export function useRealtime(userId: string) {
             })
             .subscribe();
 
-        const submissionChannel = supabase.channel("realtime-submissions")
+        const submissionChannel = supabase
+            .channel("realtime-submissions")
             .on("postgres_changes", { event: "*", schema: "public", table: "submissions" }, () => {
                 console.log("Realtime: Submissions updated, refreshing assessments & analytics...");
                 queryClient.invalidateQueries({ queryKey: ["analytics"] });
@@ -32,18 +34,23 @@ export function useRealtime(userId: string) {
             })
             .subscribe();
 
-        const progressChannel = supabase.channel("realtime-progress")
-            .on("postgres_changes", { event: "*", schema: "public", table: "content_progress" }, () => {
-                console.log("Realtime: Progress updated, refreshing analytics...");
-                queryClient.invalidateQueries({ queryKey: ["analytics"] });
-                queryClient.invalidateQueries({ queryKey: ["progress"] });
-                setLastUpdated(new Date());
-            })
+        const progressChannel = supabase
+            .channel("realtime-progress")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "content_progress" },
+                () => {
+                    console.log("Realtime: Progress updated, refreshing analytics...");
+                    queryClient.invalidateQueries({ queryKey: ["analytics"] });
+                    queryClient.invalidateQueries({ queryKey: ["progress"] });
+                    setLastUpdated(new Date());
+                }
+            )
             .subscribe();
 
         // 2. Setup Presence for "Users online"
         const presenceChannel = supabase.channel("adun-online-users", {
-            config: { presence: { key: userId } }
+            config: { presence: { key: userId } },
         });
 
         presenceChannel

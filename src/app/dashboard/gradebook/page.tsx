@@ -3,6 +3,16 @@
 import { useAuth } from "@/providers/AuthProvider";
 import { Award, TrendingUp, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell,
+} from "@/components/ui/table";
 import { useGrades } from "@/hooks/useGrades";
 import { useStudentAnalytics } from "@/hooks/useAnalytics";
 
@@ -16,9 +26,9 @@ export default function GradebookPage() {
 
     if (isLoading) {
         return (
-            <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="mx-auto max-w-5xl space-y-6">
                 <Skeleton className="h-10 w-48" />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <Skeleton className="h-32 w-full rounded-2xl" />
                     <Skeleton className="h-32 w-full rounded-2xl" />
                     <Skeleton className="h-32 w-full rounded-2xl" />
@@ -44,97 +54,146 @@ export default function GradebookPage() {
         session: g.session,
     }));
 
-    const gradeColor = (grade: string) => {
-        if (grade.startsWith("A")) return "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400";
-        if (grade.startsWith("B")) return "text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400";
-        if (grade.startsWith("C")) return "text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400";
-        return "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400";
+    const gradeVariant = (grade: string): "success" | "info" | "warning" | "destructive" => {
+        if (grade.startsWith("A")) return "success";
+        if (grade.startsWith("B")) return "info";
+        if (grade.startsWith("C")) return "warning";
+        return "destructive";
     };
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="mx-auto max-w-5xl space-y-6">
             <div>
                 <h1 className="text-2xl font-bold dark:text-white">Academic Gradebook</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Official performance records and cumulative GPA</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Official performance records and cumulative GPA
+                </p>
             </div>
 
             {/* Summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-gradient-to-br from-indigo-900 to-blue-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl flex items-center justify-center">
-                        <Award className="w-16 h-16 text-white/10" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="from-navy-900 to-navy-700 relative overflow-hidden rounded-2xl bg-gradient-to-br p-6 text-white shadow-lg">
+                    <div className="absolute top-0 right-0 flex h-32 w-32 items-center justify-center rounded-full bg-white/10 blur-2xl">
+                        <Award className="h-16 w-16 text-white/10" />
                     </div>
                     <div className="relative z-10">
-                        <Award className="w-8 h-8 text-amber-400 mb-2" />
+                        <Award className="mb-2 h-8 w-8 text-amber-400" />
                         <p className="text-4xl font-black">{cgpa}</p>
-                        <p className="text-blue-200 text-sm font-medium mt-1 uppercase tracking-wider">Cumulative GPA</p>
+                        <p className="mt-1 text-sm font-medium tracking-wider text-blue-200 uppercase">
+                            Cumulative GPA
+                        </p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 hover:-translate-y-1 transition-transform">
-                    <TrendingUp className="w-8 h-8 text-emerald-500 mb-2" />
-                    <p className="text-4xl font-black dark:text-white text-gray-900">{grades.filter((g) => g.gradePoint >= 3.5).length}<span className="text-2xl text-gray-400">/{grades.length}</span></p>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1 uppercase tracking-wider">Courses with B+ or higher</p>
-                </div>
+                <Card className="p-6 transition-transform hover:-translate-y-1">
+                    <TrendingUp className="mb-2 h-8 w-8 text-emerald-500" />
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                        {grades.filter((g) => g.gradePoint >= 3.5).length}
+                        <span className="text-2xl text-gray-400">/{grades.length}</span>
+                    </p>
+                    <p className="mt-1 text-sm font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                        Courses with B+ or higher
+                    </p>
+                </Card>
 
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 hover:-translate-y-1 transition-transform">
-                    <BookOpen className="w-8 h-8 text-blue-500 mb-2" />
-                    <p className="text-4xl font-black dark:text-white text-gray-900">{Math.round(grades.reduce((a, g) => a + g.totalScore, 0) / (grades.length || 1))}%</p>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1 uppercase tracking-wider">Overall Average Score</p>
-                </div>
+                <Card className="p-6 transition-transform hover:-translate-y-1">
+                    <BookOpen className="mb-2 h-8 w-8 text-blue-500" />
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">
+                        {Math.round(
+                            grades.reduce((a, g) => a + g.totalScore, 0) / (grades.length || 1)
+                        )}
+                        %
+                    </p>
+                    <p className="mt-1 text-sm font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                        Overall Average Score
+                    </p>
+                </Card>
             </div>
 
             {/* Grades Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200">Current Semester Transcripts</h3>
+            <Card>
+                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-5 dark:border-gray-700 dark:bg-gray-800/50">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200">
+                        Current Semester Transcripts
+                    </h3>
                     {grades.length > 0 && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {grades[0].session} — {grades[0].semester} Semester
                         </span>
                     )}
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50/50 dark:bg-gray-800/50">
-                            <tr>
-                                <th className="text-left py-4 px-5 font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">Course Details</th>
-                                <th className="text-center py-4 px-5 font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">CA1</th>
-                                <th className="text-center py-4 px-5 font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">CA2</th>
-                                <th className="text-center py-4 px-5 font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">Exam</th>
-                                <th className="text-center py-4 px-5 font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider text-xs bg-blue-50/50 dark:bg-blue-900/10">Total %</th>
-                                <th className="text-center py-4 px-5 font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-xs">Grade</th>
-                                <th className="text-center py-4 px-5 font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-xs bg-emerald-50/50 dark:bg-emerald-900/10">GP</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {grades.map((g, i) => (
-                                <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                                    <td className="py-4 px-5">
-                                        <p className="font-bold text-gray-900 dark:text-white">{g.courseCode}</p>
-                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{g.courseTitle}</p>
-                                    </td>
-                                    <td className="text-center py-4 px-5 font-medium text-gray-600 dark:text-gray-300">{g.quizAvg > 0 ? `${g.quizAvg}` : "—"}</td>
-                                    <td className="text-center py-4 px-5 font-medium text-gray-600 dark:text-gray-300">{g.assignmentAvg > 0 ? `${g.assignmentAvg}` : "—"}</td>
-                                    <td className="text-center py-4 px-5 font-medium text-gray-600 dark:text-gray-300">{g.examScore > 0 ? `${g.examScore}` : "—"}</td>
-                                    <td className="text-center py-4 px-5 font-black text-gray-900 dark:text-white bg-blue-50/20 dark:bg-blue-900/5">{g.totalScore > 0 ? `${g.totalScore}%` : "—"}</td>
-                                    <td className="text-center py-4 px-5">
-                                        <span className={`text-xs font-black px-3 py-1.5 rounded-md shadow-sm border border-current/10 ${gradeColor(g.grade)}`}>{g.grade}</span>
-                                    </td>
-                                    <td className="text-center py-4 px-5 font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/5">{g.gradePoint > 0 ? g.gradePoint.toFixed(1) : "—"}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <Table>
+                    <TableHeader className="bg-gray-50/50 dark:bg-gray-800/50">
+                        <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                            <TableHead className="text-gray-600 dark:text-gray-300">
+                                Course Details
+                            </TableHead>
+                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                CA1
+                            </TableHead>
+                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                CA2
+                            </TableHead>
+                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                Exam
+                            </TableHead>
+                            <TableHead className="bg-blue-50/50 text-center text-blue-600 dark:bg-blue-900/10 dark:text-blue-400">
+                                Total %
+                            </TableHead>
+                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                Grade
+                            </TableHead>
+                            <TableHead className="bg-emerald-50/50 text-center text-emerald-600 dark:bg-emerald-900/10 dark:text-emerald-400">
+                                GP
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {grades.map((g, i) => (
+                            <TableRow key={i}>
+                                <TableCell>
+                                    <p className="font-bold text-gray-900 dark:text-white">
+                                        {g.courseCode}
+                                    </p>
+                                    <p className="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        {g.courseTitle}
+                                    </p>
+                                </TableCell>
+                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                    {g.quizAvg > 0 ? `${g.quizAvg}` : "—"}
+                                </TableCell>
+                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                    {g.assignmentAvg > 0 ? `${g.assignmentAvg}` : "—"}
+                                </TableCell>
+                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                    {g.examScore > 0 ? `${g.examScore}` : "—"}
+                                </TableCell>
+                                <TableCell className="bg-blue-50/20 text-center font-black text-gray-900 dark:bg-blue-900/5 dark:text-white">
+                                    {g.totalScore > 0 ? `${g.totalScore}%` : "—"}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <Badge
+                                        variant={gradeVariant(g.grade)}
+                                        className="border border-current/10 font-black shadow-sm"
+                                    >
+                                        {g.grade}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="bg-emerald-50/20 text-center font-black text-emerald-700 dark:bg-emerald-900/5 dark:text-emerald-400">
+                                    {g.gradePoint > 0 ? g.gradePoint.toFixed(1) : "—"}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
 
-                    {grades.length === 0 && (
-                        <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-                            <Award className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                            <p className="font-medium">No recorded grades for this academic session.</p>
-                        </div>
-                    )}
-                </div>
-            </div>
+                {grades.length === 0 && (
+                    <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <Award className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
+                        <p className="font-medium">No recorded grades for this academic session.</p>
+                    </div>
+                )}
+            </Card>
         </div>
     );
 }

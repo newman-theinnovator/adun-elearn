@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { APP_NAME, UNIVERSITY_NAME } from "@/lib/branding";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -39,72 +41,89 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="from-navy-950 via-navy-900 to-navy-800 flex min-h-screen items-center justify-center bg-gradient-to-br p-4">
             {/* Background orbs */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] right-[-5%] w-72 h-72 bg-blue-500/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
-                <div className="absolute top-1/3 left-1/3 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl" />
+            <div className="pointer-events-none absolute top-0 left-0 h-full w-full overflow-hidden">
+                <div className="bg-navy-400/20 absolute top-[-10%] right-[-5%] h-72 w-72 rounded-full blur-3xl" />
+                <div className="bg-crimson-500/10 absolute bottom-[-10%] left-[-5%] h-96 w-96 rounded-full blur-3xl" />
+                <div className="bg-crimson-400/10 absolute top-1/3 left-1/3 h-48 w-48 rounded-full blur-2xl" />
             </div>
 
             <div className="relative z-10 w-full max-w-md">
                 {/* Logo / Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl shadow-lg shadow-amber-500/30 mb-4 rotate-3">
-                        <BookOpen className="w-8 h-8 text-blue-950" />
+                <div className="mb-8 text-center">
+                    <div className="mb-4 inline-flex rounded-2xl bg-white p-3 shadow-lg">
+                        <Logo />
                     </div>
-                    <h1 className="text-3xl font-black text-white tracking-tight">ADUN E-Learn</h1>
-                    <p className="text-blue-300 text-sm mt-1 font-medium">Admiralty University of Nigeria E-Learning Portal</p>
+                    <h1 className="text-3xl font-black tracking-tight text-white">{APP_NAME}</h1>
+                    <p className="text-navy-200 mt-1 text-sm font-medium">
+                        {UNIVERSITY_NAME} E-Learning Portal
+                    </p>
                 </div>
 
                 {/* Card */}
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8">
+                <div className="rounded-3xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
                     <div className="mb-6">
                         <h2 className="text-xl font-bold text-white">Welcome back</h2>
-                        <p className="text-blue-200 text-sm mt-1">Sign in to access your academic portal</p>
+                        <p className="text-navy-200 mt-1 text-sm">
+                            Sign in to access your academic portal
+                        </p>
                     </div>
 
                     {error && (
-                        <div className="flex items-start gap-3 bg-red-500/20 border border-red-500/40 rounded-xl p-3 mb-5 text-red-200 text-sm">
-                            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/20 p-3 text-sm text-red-200">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                             <span>{error}</span>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-semibold text-blue-100 mb-1.5">
+                            <label
+                                htmlFor="login-email"
+                                className="text-navy-100 mb-1.5 block text-sm font-semibold"
+                            >
                                 Email Address
                             </label>
                             <input
+                                id="login-email"
                                 type="email"
                                 value={email}
-                                onChange={e => setEmail(e.target.value)}
+                                onChange={(e) => setEmail(e.target.value)}
                                 placeholder="your.email@stu.adun.edu.ng"
                                 required
-                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300/60 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400/60 transition-all text-sm"
+                                className="placeholder-navy-300/60 focus:border-crimson-500/60 focus:ring-crimson-500/60 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white transition-all focus:ring-2 focus:outline-none"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-blue-100 mb-1.5">
+                            <label
+                                htmlFor="login-password"
+                                className="text-navy-100 mb-1.5 block text-sm font-semibold"
+                            >
                                 Password
                             </label>
                             <div className="relative">
                                 <input
+                                    id="login-password"
                                     type={showPassword ? "text" : "password"}
                                     value={password}
-                                    onChange={e => setPassword(e.target.value)}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter your password"
                                     required
-                                    className="w-full px-4 py-3 pr-12 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300/60 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-400/60 transition-all text-sm"
+                                    className="placeholder-navy-300/60 focus:border-crimson-500/60 focus:ring-crimson-500/60 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 pr-12 text-sm text-white transition-all focus:ring-2 focus:outline-none"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 hover:text-white transition-colors p-1"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    className="text-navy-300 absolute top-1/2 right-3 -translate-y-1/2 p-1 transition-colors hover:text-white"
                                 >
-                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -112,42 +131,21 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-blue-950 font-bold py-3.5 rounded-xl shadow-lg shadow-amber-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 flex items-center justify-center gap-2 text-sm"
+                            className="from-crimson-600 to-crimson-500 shadow-crimson-500/30 hover:from-crimson-700 hover:to-crimson-600 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:translate-y-0 disabled:opacity-60"
                         >
                             {loading ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
+                                </>
                             ) : (
                                 "Sign In to Portal"
                             )}
                         </button>
                     </form>
-
-                    {/* Demo credentials */}
-                    <div className="mt-6 pt-5 border-t border-white/10">
-                        <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3">Demo Credentials</p>
-                        <div className="space-y-2">
-                            {[
-                                { role: "Student", email: "stu0@adun.edu.ng", color: "emerald" },
-                                { role: "Lecturer", email: "n.eze@adun.edu.ng", color: "blue" },
-                                { role: "Admin", email: "admin@adun.edu.ng", color: "purple" },
-                            ].map(({ role, email: demoEmail, color }) => (
-                                <button
-                                    key={role}
-                                    type="button"
-                                    onClick={() => { setEmail(demoEmail); setPassword("password123"); }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left group`}
-                                >
-                                    <span className={`text-xs font-bold text-${color}-400 group-hover:text-${color}-300`}>{role}</span>
-                                    <span className="text-xs text-blue-300 font-mono truncate ml-3">{demoEmail}</span>
-                                </button>
-                            ))}
-                            <p className="text-xs text-blue-400/60 text-center mt-1">All demo accounts use: <span className="font-mono font-bold text-blue-300">password123</span></p>
-                        </div>
-                    </div>
                 </div>
 
-                <p className="text-center text-blue-400/60 text-xs mt-6">
-                    © {new Date().getFullYear()} Admiralty University of Nigeria. All rights reserved.
+                <p className="text-navy-300/60 mt-6 text-center text-xs">
+                    © {new Date().getFullYear()} {UNIVERSITY_NAME}. All rights reserved.
                 </p>
             </div>
         </div>

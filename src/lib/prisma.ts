@@ -1,8 +1,10 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "@prisma/client";
+import { getServerEnv } from "./env";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+getServerEnv(); // fail fast if DATABASE_URL/DIRECT_URL etc. are missing
 
-export const prisma =
-    globalForPrisma.prisma || new PrismaClient()
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

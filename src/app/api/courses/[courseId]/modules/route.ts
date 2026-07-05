@@ -1,43 +1,50 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { moduleSchema } from "@/lib/validators";
 import * as z from "zod";
+import {
+    apiSuccess,
+    unauthorized,
+    forbidden,
+    notFound,
+    validationError,
+    apiError,
+} from "@/lib/api-response";
 
-export async function GET(req: Request, { params }: { params: Promise<{ courseId: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ courseId: string }> }) {
     const session = await auth();
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session) return unauthorized();
 
     try {
         const { courseId } = await params;
         const modules = await prisma.module.findMany({
             where: { courseId },
             include: {
-                contents: { orderBy: { order: 'asc' } }
+                contents: { orderBy: { order: "asc" } },
             },
-            orderBy: { order: 'asc' }
+            orderBy: { order: "asc" },
         });
 
-        return NextResponse.json(modules);
+        return apiSuccess(modules);
     } catch (error) {
         console.error("Error fetching modules:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ courseId: string }> }) {
     const session = await auth();
     if (!session || (session.user.role !== "LECTURER" && session.user.role !== "ADMIN")) {
-        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        return forbidden();
     }
 
     try {
         const { courseId } = await params;
         const course = await prisma.course.findUnique({ where: { id: courseId } });
 
-        if (!course) return NextResponse.json({ message: "Course not found" }, { status: 404 });
+        if (!course) return notFound("Course not found");
         if (session.user.role !== "ADMIN" && course.instructorId !== session.user.id) {
-            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+            return forbidden();
         }
 
         const body = await req.json();
@@ -46,16 +53,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ courseI
         const newModule = await prisma.module.create({
             data: {
                 ...parsedData,
-                courseId: course.id
-            }
+                courseId: course.id,
+            },
         });
 
-        return NextResponse.json(newModule, { status: 201 });
+        return apiSuccess(newModule, 201);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ message: "Validation error", errors: error.issues }, { status: 400 });
+            return validationError(error);
         }
         console.error("Error creating module:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

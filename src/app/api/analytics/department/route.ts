@@ -1,17 +1,21 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { apiSuccess, forbidden, apiError } from "@/lib/api-response";
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
     const session = await auth();
     if (!session || session.user.role !== "ADMIN") {
-        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        return forbidden();
     }
 
     try {
         // 1. Core stats
-        const totalStudents = await prisma.user.count({ where: { role: "STUDENT", isActive: true } });
-        const totalLecturers = await prisma.user.count({ where: { role: "LECTURER", isActive: true } });
+        const totalStudents = await prisma.user.count({
+            where: { role: "STUDENT", isActive: true },
+        });
+        const totalLecturers = await prisma.user.count({
+            where: { role: "LECTURER", isActive: true },
+        });
         const totalCourses = await prisma.course.count({});
         const activeEnrollments = await prisma.enrollment.count();
 
@@ -26,15 +30,19 @@ export async function GET(req: Request) {
                 globalUnits += g.course.unit;
             }
         });
-        const departmentAverageGPA = globalUnits > 0 ? (globalPoints / globalUnits).toFixed(2) : "0.00";
+        const departmentAverageGPA =
+            globalUnits > 0 ? (globalPoints / globalUnits).toFixed(2) : "0.00";
 
         // 3. Performance by level
-        const students = await prisma.user.findMany({ where: { role: "STUDENT" }, select: { id: true, level: true } });
-        const levelGPA: Record<number, { points: number, units: number }> = {};
+        const students = await prisma.user.findMany({
+            where: { role: "STUDENT" },
+            select: { id: true, level: true },
+        });
+        const levelGPA: Record<number, { points: number; units: number }> = {};
 
         for (const student of students) {
             if (!student.level) continue;
-            const studentGrades = allGrades.filter(g => g.userId === student.id);
+            const studentGrades = allGrades.filter((g) => g.userId === student.id);
 
             if (!levelGPA[student.level]) levelGPA[student.level] = { points: 0, units: 0 };
 
@@ -46,38 +54,42 @@ export async function GET(req: Request) {
             });
         }
 
-        const performanceByLevel = Object.keys(levelGPA).map(lvl => ({
+        const performanceByLevel = Object.keys(levelGPA).map((lvl) => ({
             level: parseInt(lvl, 10),
-            averageGPA: levelGPA[parseInt(lvl, 10)].units > 0
-                ? parseFloat((levelGPA[parseInt(lvl, 10)].points / levelGPA[parseInt(lvl, 10)].units).toFixed(2))
-                : 0.00
+            averageGPA:
+                levelGPA[parseInt(lvl, 10)].units > 0
+                    ? parseFloat(
+                          (
+                              levelGPA[parseInt(lvl, 10)].points / levelGPA[parseInt(lvl, 10)].units
+                          ).toFixed(2)
+                      )
+                    : 0.0,
         }));
 
         // 4. Most popular courses
         const popularCourses = await prisma.course.findMany({
             take: 5,
-            orderBy: { enrollments: { _count: 'desc' } },
-            select: { code: true, title: true, _count: { select: { enrollments: true } } }
+            orderBy: { enrollments: { _count: "desc" } },
+            select: { code: true, title: true, _count: { select: { enrollments: true } } },
         });
 
-        return NextResponse.json({
+        return apiSuccess({
             overview: {
                 totalStudents,
                 totalLecturers,
                 totalCourses,
                 activeEnrollments,
-                departmentAverageGPA
+                departmentAverageGPA,
             },
             performanceByLevel,
             popularCourses: popularCourses.map((p: any) => ({
                 code: p.code,
                 title: p.title,
-                students: p._count.enrollments
-            }))
+                students: p._count.enrollments,
+            })),
         });
-
     } catch (error) {
         console.error("Error generating department analytics:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }

@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { assessmentSubmitSchema } from "@/lib/validators";
+import * as z from "zod";
+import { apiSuccess, forbidden, notFound, apiError, validationError } from "@/lib/api-response";
 // Prisma enums used as string literals for type safety
 const SubmissionStatus = {
     SUBMITTED: "SUBMITTED",
@@ -16,28 +18,28 @@ const AssessmentType = {
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session || session.user.role !== "STUDENT") {
-        return NextResponse.json({ message: "Forbidden: Only students can submit" }, { status: 403 });
+        return forbidden("Forbidden: Only students can submit");
     }
 
     try {
         const { id } = await params;
         const body = await req.json();
-        const { answers, fileUrl } = body; // answers is a map of questionId -> answer string
+        const { answers, fileUrl } = assessmentSubmitSchema.parse(body); // answers is a map of questionId -> answer string
 
         const assessment = await prisma.assessment.findUnique({
             where: { id },
-            include: { questions: true }
+            include: { questions: true },
         });
 
-        if (!assessment) return NextResponse.json({ message: "Assessment not found" }, { status: 404 });
+        if (!assessment) return notFound("Assessment not found");
 
         // Check if already submitted
         const existing = await prisma.submission.findUnique({
-            where: { userId_assessmentId: { userId: session.user.id, assessmentId: id } }
+            where: { userId_assessmentId: { userId: session.user.id, assessmentId: id } },
         });
 
         if (existing) {
-            return NextResponse.json({ message: "Already submitted" }, { status: 409 });
+            return apiError(409, "Already submitted");
         }
 
         let calculatedScore = 0;
@@ -56,7 +58,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                     marksAwarded = 0; // Requires lecturer review
                 } else {
                     // MCQ or TRUE_FALSE
-                    isCorrect = studentAnswer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase();
+                    isCorrect =
+                        studentAnswer.trim().toLowerCase() ===
+                        question.correctAnswer.trim().toLowerCase();
                     if (isCorrect) {
                         marksAwarded = question.marks;
                         calculatedScore += marksAwarded;
@@ -67,14 +71,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                     questionId: question.id,
                     answer: studentAnswer,
                     isCorrect: question.type === "SHORT_ANSWER" ? null : isCorrect,
-                    marksAwarded
+                    marksAwarded,
                 });
             }
         } else if (assessment.type === AssessmentType.ASSIGNMENT) {
             needsManualGrading = true;
         }
 
-        const submissionStatus = needsManualGrading ? SubmissionStatus.SUBMITTED : SubmissionStatus.GRADED;
+        const submissionStatus = needsManualGrading
+            ? SubmissionStatus.SUBMITTED
+            : SubmissionStatus.GRADED;
 
         const submission = await prisma.submission.create({
             data: {
@@ -83,10 +89,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 status: submissionStatus,
                 score: needsManualGrading ? null : calculatedScore,
                 fileUrl: fileUrl || null,
-                answers: answerRecordsToCreate.length > 0 ? {
-                    create: answerRecordsToCreate
-                } : undefined
-            }
+                answers:
+                    answerRecordsToCreate.length > 0
+                        ? {
+                              create: answerRecordsToCreate,
+                          }
+                        : undefined,
+            },
         });
 
         // If auto-graded immediately, we could also log something to Activity Log here
@@ -94,13 +103,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             data: {
                 userId: session.user.id,
                 action: "SUBMIT_ASSESSMENT",
-                metadata: { assessmentId: id, type: assessment.type, autoGrade: calculatedScore }
-            }
+                metadata: { assessmentId: id, type: assessment.type, autoGrade: calculatedScore },
+            },
         });
 
-        return NextResponse.json(submission, { status: 201 });
+        return apiSuccess(submission, 201);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return validationError(error);
+        }
         console.error("Error submitting assessment:", error);
-        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+        return apiError(500, "Internal server error");
     }
 }
