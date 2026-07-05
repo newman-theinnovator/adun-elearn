@@ -21,7 +21,7 @@ jobs:
                 image: postgres:16
                 env:
                     POSTGRES_USER: postgres
-                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
                     POSTGRES_DB: adun_elearn_ci
                 ports:
                     - 5432:5432
@@ -31,8 +31,8 @@ jobs:
                     --health-timeout 5s
                     --health-retries 5
         env:
-            DATABASE_URL: postgresql://postgres:postgres@localhost:5432/adun_elearn_ci
-            DIRECT_URL: postgresql://postgres:postgres@localhost:5432/adun_elearn_ci
+            DATABASE_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/adun_elearn_ci
+            DIRECT_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/adun_elearn_ci
         steps:
             - uses: actions/checkout@v4
 
@@ -70,7 +70,7 @@ jobs:
                 image: postgres:16
                 env:
                     POSTGRES_USER: postgres
-                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
                     POSTGRES_DB: adun_elearn_ci
                 ports:
                     - 5432:5432
@@ -80,8 +80,8 @@ jobs:
                     --health-timeout 5s
                     --health-retries 5
         env:
-            DATABASE_URL: postgresql://postgres:postgres@localhost:5432/adun_elearn_ci
-            DIRECT_URL: postgresql://postgres:postgres@localhost:5432/adun_elearn_ci
+            DATABASE_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/adun_elearn_ci
+            DIRECT_URL: postgresql://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/adun_elearn_ci
         steps:
             - uses: actions/checkout@v4
 
