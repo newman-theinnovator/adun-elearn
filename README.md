@@ -2,85 +2,118 @@
 
 **Software Engineering Department E-Learning System & Performance Analytics**
 
-This project is the official E-Learning System built for the Software Engineering Department at Admiralty University of Nigeria (ADUN). It empowers students, lecturers, and administrators with a feature-rich, deeply analytical dashboard environment driven by real-time progression tracking.
-
-### 🌐 Live Deployment
-
-**Live Link:** [https://adun-elearn.vercel.app](https://adun-elearn.vercel.app) _(Represents production domain)_
+Final year project — Admiralty University of Nigeria, Department of Software Engineering. A role-aware e-learning portal covering course delivery, assessments and grading, discussion forums, and AI-powered performance analytics, seeded with a full academic session (First Semester graded, Second Semester ongoing) of realistic department data.
 
 ---
 
-## 🎯 Features & Dashboards
+## 🎯 Features
 
-The application is segregated into three distinct, powerful perspectives:
+**Public landing page** at `/` — university branding, feature overview, links to sign-in.
 
-1. **Student Dashboard:**
-    - Real-time **Current CGPA** calculation natively parsing grades from all enrolled SWE courses.
-    - Dynamic **GPA Trend LineChart** visualizing academic health across semesters.
-    - Live **Pending Tasks** and **Content Progress**.
+**Student Dashboard**
 
-2. **Lecturer Dashboard:**
-    - Immediate **Class Pass Rate** tracking alongside grading backlogs.
-    - Automatic **Average Grade per Course BarChart** summarizing performance distributions per class.
-    - **At-Risk System** to alert professors of students needing critical guidance.
+- Real-time CGPA and GPA trend across semesters
+- AI-generated performance insights (Claude) — personalized narrative feedback and a predicted final grade, with a rule-based fallback when no API key is configured
+- Course enrollment, content delivery (video/document modules), and content-completion tracking
+- Assessment submission (quizzes and assignments) and gradebook
+- Discussion forum — post, reply, like, browse by course
 
-3. **Admin Dashboard:**
-    - Centralized **Department Overview** covering total volume of students, lecturers, and active SWE courses.
-    - Dedicated **Export Report Module** permitting 1-click **PDF** and **CSV** tabular reports natively extracted from Postgres CDC.
-    - Segmented **Average GPA by Level BarChart** for administrative academic insight.
+**Lecturer Dashboard**
+
+- Class pass rate, pending-grading queue, and per-course average scores
+- Grade entry (CA1/CA2/Exam → auto-computed total, letter grade, grade point)
+- Pin/unpin important forum threads in courses they teach
+
+**Admin Dashboard**
+
+- Department-wide overview: students, lecturers, courses, enrollments, average GPA
+- Performance breakdown by academic level, most popular courses
+- **User management**: create accounts (temporary password generated + emailed), reset passwords, activate/deactivate, change roles
+- 1-click PDF/CSV export of department reports
+
+---
+
+## 🔐 Authentication & Accounts
+
+Accounts are **admin-provisioned only** — there is no public self-registration. An admin creates an account from the Users page, which generates a temporary password and emails it (or logs it to the console in local dev, if `RESEND_API_KEY` isn't configured). Any logged-in user can change their own password from Settings; admins can reset any account's password at any time.
+
+**Demo credentials** (after seeding — see below), all using password `password123`:
+
+| Role     | Email                                                             |
+| -------- | ----------------------------------------------------------------- |
+| Admin    | `admin@adun.edu.ng`                                               |
+| Lecturer | `n.eze@adun.edu.ng`, `c.okoro@adun.edu.ng`, `a.bello@adun.edu.ng` |
+| Student  | `stu0@adun.edu.ng` through `stu39@adun.edu.ng`                    |
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Framework:** Next.js 15 (App Router, React Compiler)
-- **Database Architecture:** Prisma ORM mapped to PostgreSQL (via Supabase)
-- **Real-time Synchronicity:** `@supabase/ssr` leveraging websockets onto `queryClient.invalidateQueries`
-- **Frontend & Styling:** TailwindCSS, Shadcn UI, Recharts (Data Visualization)
-- **Export Utility:** `jspdf` & `jspdf-autotable`
+- **Framework:** Next.js 16 (App Router, React 19, React Compiler)
+- **Auth:** NextAuth.js v5 (credentials provider, JWT sessions) + Prisma
+- **Database:** PostgreSQL via Supabase, accessed through Prisma ORM
+- **Storage:** Supabase Storage (file uploads only — not used for auth)
+- **AI:** Anthropic Claude (student insight generation), optional — falls back gracefully without a key
+- **Email:** Resend, optional — falls back to console logging in dev
+- **Validation:** Zod
+- **Data fetching:** TanStack Query
+- **UI:** Tailwind CSS 4, shadcn/ui-style components, Recharts, lucide-react
+- **Testing:** Vitest (unit) + Playwright (e2e)
+- **CI:** GitHub Actions (lint, typecheck, format check, unit tests, build, e2e)
 
 ---
 
-## 🚀 How to Run Locally
+## 🚀 Running Locally
 
-To boot this application on your local machine for testing or expansion:
-
-1. **Clone the repository:**
+1. **Clone and install:**
 
     ```bash
     git clone https://github.com/newman-theinnovator/adun-elearn.git
     cd adun-elearn
-    ```
-
-2. **Install Dependencies:**
-
-    ```bash
     npm install
     ```
 
-3. **Set Up Environment Variables:**
-   Duplicate the provided `.env.example` into a local `.env` file, supplying your Postgres connection string and Supabase Auth credentials.
+2. **Configure environment variables:** copy `env.example` to `.env` and fill in your Supabase/Postgres connection strings and a `NEXTAUTH_SECRET` (generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). `RESEND_API_KEY` and `ANTHROPIC_API_KEY` are both optional — the app degrades gracefully without them (see comments in `env.example`).
 
-4. **Initialize the Development Server:**
+3. **Seed the database** (wipes and regenerates everything — see below):
+
+    ```bash
+    npx prisma db seed
+    ```
+
+4. **Start the dev server:**
+
     ```bash
     npm run dev
     ```
-    Open `http://localhost:3000` in your browser to view the application.
+
+    Open `http://localhost:3000`.
 
 ---
 
-## 💾 How to Seed Data (Defense Setup)
-
-To automatically inject hundreds of realistic Nigerian students, software engineering courses, and relational academic history (for populating the charts perfectly):
-
-Ensure your `.env` contains a valid Postgres string, then execute:
+## 💾 Seeding Data (Defense Setup)
 
 ```bash
 npx prisma db seed
 ```
 
-**Optimized Execution:** The seed utilizes high-efficiency caching and batch `createMany` transactions that instantly format relational data models flawlessly without bottlenecking database connection limits.
+`prisma/seed.ts` **deletes all existing data and regenerates it from scratch** — 1 admin, 3 lecturers, 8 courses across 200/300/400 level, 40 students, enrollments, grades (First Semester fully graded, Second Semester ongoing with a realistic mix of graded/pending/not-yet-submitted work), quiz questions and answers, content-progress and login-activity history, and forum discussions per course. Re-run it any time you want a fresh, consistent dataset for a demo.
 
 ---
 
-> _Developed for Final Year Project Defense (March 2026)._
+## 🧪 Quality Checks
+
+```bash
+npm run lint        # ESLint
+npm run typecheck    # tsc --noEmit
+npm run format:check # Prettier
+npm run test          # Vitest unit tests
+npm run test:e2e      # Playwright e2e tests
+npm run build          # production build
+```
+
+All of the above run automatically on every push/PR via GitHub Actions (`.github/workflows/ci.yml`).
+
+---
+
+> _Final Year Project — Department of Software Engineering, Admiralty University of Nigeria._

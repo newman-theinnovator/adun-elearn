@@ -59,6 +59,11 @@ export const gradeUpdateSchema = z.object({
     exam: z.number().nullable().optional(),
 });
 
+export const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, { message: "Current password is required" }),
+    newPassword: z.string().min(6, { message: "New password must be at least 6 characters" }),
+});
+
 export const settingsSchema = z.object({
     emailNotifications: z.boolean().optional(),
     forumAlerts: z.boolean().optional(),
