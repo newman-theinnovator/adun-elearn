@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { signOut } from "next-auth/react";
-import { Shield, Bell, LogOut, Save } from "lucide-react";
+import { Shield, Bell, LogOut, Save, KeyRound } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,23 @@ function useSaveSettings() {
     });
 }
 
+function useChangePassword() {
+    return useMutation({
+        mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+            const res = await fetch("/api/settings/change-password", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to change password");
+            }
+            return res.json();
+        },
+    });
+}
+
 export default function SettingsPage() {
     const { data: session } = useAuth();
     const user = session?.user as any;
@@ -54,6 +71,16 @@ export default function SettingsPage() {
     const [gradeAlerts, setGradeAlerts] = useState(true);
     const [saved, setSaved] = useState(false);
     const [syncedPrefsId, setSyncedPrefsId] = useState<Preferences | null>(null);
+
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordSaved, setPasswordSaved] = useState(false);
+    const {
+        mutate: changePassword,
+        isPending: isChangingPassword,
+        error: passwordError,
+    } = useChangePassword();
 
     // Sync state from server (only once per fetched prefs object, to avoid
     // clobbering in-progress local edits on every render)
@@ -71,6 +98,29 @@ export default function SettingsPage() {
                 onSuccess: () => {
                     setSaved(true);
                     setTimeout(() => setSaved(false), 2000);
+                },
+            }
+        );
+    };
+
+    const [confirmMismatch, setConfirmMismatch] = useState(false);
+
+    const handleChangePassword = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            setConfirmMismatch(true);
+            return;
+        }
+        setConfirmMismatch(false);
+        changePassword(
+            { currentPassword, newPassword },
+            {
+                onSuccess: () => {
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmPassword("");
+                    setPasswordSaved(true);
+                    setTimeout(() => setPasswordSaved(false), 2000);
                 },
             }
         );
@@ -131,6 +181,76 @@ export default function SettingsPage() {
                             </span>
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Change Password */}
+            <Card>
+                <CardHeader>
+                    <KeyRound className="h-4 w-4 text-blue-600" />
+                    <CardTitle>Change Password</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                        {passwordError && (
+                            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                                {passwordError.message}
+                            </p>
+                        )}
+                        {confirmMismatch && (
+                            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                                New password and confirmation do not match.
+                            </p>
+                        )}
+                        <div>
+                            <Label htmlFor="settings-current-password">Current Password</Label>
+                            <Input
+                                id="settings-current-password"
+                                type="password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <Label htmlFor="settings-new-password">New Password</Label>
+                                <Input
+                                    id="settings-new-password"
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="settings-confirm-password">
+                                    Confirm New Password
+                                </Label>
+                                <Input
+                                    id="settings-confirm-password"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isChangingPassword}
+                            className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
+                        >
+                            <KeyRound className="h-4 w-4" />
+                            {isChangingPassword
+                                ? "Updating…"
+                                : passwordSaved
+                                  ? "Updated! ✓"
+                                  : "Update Password"}
+                        </button>
+                    </form>
                 </CardContent>
             </Card>
 

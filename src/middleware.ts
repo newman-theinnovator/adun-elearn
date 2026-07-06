@@ -68,8 +68,10 @@ export async function middleware(request: NextRequest) {
 
     const role = session.user?.role as string | undefined;
 
-    // Admin-only API routes
-    if (pathname.startsWith("/api/users") || pathname.startsWith("/api/settings")) {
+    // Admin-only API routes. /api/settings is intentionally excluded — it's
+    // self-service (notification preferences, password change) for any
+    // logged-in user; each route there checks its own session, not role.
+    if (pathname.startsWith("/api/users")) {
         if (role !== "ADMIN") {
             return new NextResponse(JSON.stringify({ error: "Forbidden" }), {
                 status: 403,

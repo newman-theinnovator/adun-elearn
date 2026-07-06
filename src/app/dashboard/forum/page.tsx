@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useForumPosts, useCreateReply, useForumThread, useCreatePost } from "@/hooks/useFeatures";
+import {
+    useForumPosts,
+    useCreateReply,
+    useForumThread,
+    useCreatePost,
+    useLikePost,
+    useLikeReply,
+    usePinThread,
+} from "@/hooks/useFeatures";
 import { useCourses } from "@/hooks/useCourses";
-import { MessageSquare, ThumbsUp, Send, Plus } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, Plus, Pin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -127,9 +135,16 @@ function NewPostModal({
 
 // ─── Thread View ─────────────────────────────────────────────────────────────
 function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void }) {
+    const { data: session } = useAuth();
+    const currentUser = session?.user as any;
     const { data: threadData, isLoading: threadLoading } = useForumThread(threadId);
     const { mutate: createReply, isPending: replying } = useCreateReply();
+    const { mutate: likePost } = useLikePost();
+    const { mutate: likeReply } = useLikeReply();
+    const { mutate: pinThread, isPending: pinning, error: pinError } = usePinThread();
     const [replyContent, setReplyContent] = useState("");
+    const [likedPost, setLikedPost] = useState(false);
+    const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set());
 
     if (threadLoading || !threadData) {
         return (
@@ -154,6 +169,12 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
                 ← Back to Forum
             </button>
 
+            {pinError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {pinError.message}
+                </p>
+            )}
+
             <Card className="mb-6 rounded-xl p-5 sm:p-6">
                 <div className="flex items-start gap-4">
                     <div
@@ -177,6 +198,25 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
                             <span className="text-xs text-gray-400 dark:text-gray-500">
                                 • {new Date(threadData.createdAt).toLocaleDateString("en-NG")}
                             </span>
+                            {threadData.isPinned && (
+                                <Badge
+                                    variant="warning"
+                                    className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+                                >
+                                    📌 Pinned
+                                </Badge>
+                            )}
+                            {(currentUser?.role === "LECTURER" ||
+                                currentUser?.role === "ADMIN") && (
+                                <button
+                                    onClick={() => pinThread(threadId)}
+                                    disabled={pinning}
+                                    className="ml-auto flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    <Pin className="h-3 w-3" />
+                                    {threadData.isPinned ? "Unpin" : "Pin"}
+                                </button>
+                            )}
                         </div>
                         <h2 className="mt-3 text-xl leading-tight font-bold dark:text-white">
                             {threadData.title}
@@ -186,8 +226,16 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
                         </p>
 
                         <div className="mt-6 flex items-center gap-4 text-sm font-medium text-gray-500">
-                            <button className="flex items-center gap-1.5 transition-colors hover:text-blue-600">
-                                <ThumbsUp className="h-4 w-4" /> 0 Likes
+                            <button
+                                onClick={() => {
+                                    if (likedPost) return;
+                                    setLikedPost(true);
+                                    likePost(threadId);
+                                }}
+                                disabled={likedPost}
+                                className={`flex items-center gap-1.5 transition-colors ${likedPost ? "text-blue-600" : "hover:text-blue-600"}`}
+                            >
+                                <ThumbsUp className="h-4 w-4" /> {threadData.likes || 0} Likes
                             </button>
                             <span className="flex items-center gap-1.5">
                                 <MessageSquare className="h-4 w-4" />{" "}
@@ -236,8 +284,17 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
                                         {r.body || r.content}
                                     </p>
                                     <div className="mt-3 flex items-center gap-4 text-xs font-medium tracking-wide text-gray-500">
-                                        <button className="flex items-center gap-1 transition-colors hover:text-blue-600">
-                                            <ThumbsUp className="h-3.5 w-3.5" /> Like
+                                        <button
+                                            onClick={() => {
+                                                if (likedReplies.has(r.id)) return;
+                                                setLikedReplies((prev) => new Set(prev).add(r.id));
+                                                likeReply({ replyId: r.id, threadId });
+                                            }}
+                                            disabled={likedReplies.has(r.id)}
+                                            className={`flex items-center gap-1 transition-colors ${likedReplies.has(r.id) ? "text-blue-600" : "hover:text-blue-600"}`}
+                                        >
+                                            <ThumbsUp className="h-3.5 w-3.5" /> {r.likes || 0} Like
+                                            {r.likes === 1 ? "" : "s"}
                                         </button>
                                         <span>
                                             • {new Date(r.createdAt).toLocaleDateString("en-NG")}
@@ -286,8 +343,9 @@ function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void
 // ─── Forum Page ───────────────────────────────────────────────────────────────
 export default function ForumPage() {
     useAuth();
-    const [selectedCourse] = useState("all");
+    const [selectedCourse, setSelectedCourse] = useState("all");
     const { data: forumPosts, isLoading } = useForumPosts(selectedCourse);
+    const { data: courses } = useCourses();
 
     const [selectedPost, setSelectedPost] = useState<string | null>(null);
     const [showNewPost, setShowNewPost] = useState(false);
@@ -323,12 +381,27 @@ export default function ForumPage() {
                             {forumPosts.length} active discussions
                         </p>
                     </div>
-                    <button
-                        onClick={() => setShowNewPost(true)}
-                        className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg sm:w-auto"
-                    >
-                        <Plus className="h-4 w-4" /> New Discussion
-                    </button>
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                            <SelectTrigger aria-label="Filter by course" className="sm:w-56">
+                                <SelectValue placeholder="All Courses" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Courses</SelectItem>
+                                {(courses || []).map((c: any) => (
+                                    <SelectItem key={c.id} value={c.id}>
+                                        {c.code}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <button
+                            onClick={() => setShowNewPost(true)}
+                            className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg sm:w-auto"
+                        >
+                            <Plus className="h-4 w-4" /> New Discussion
+                        </button>
+                    </div>
                 </div>
 
                 <div className="space-y-4">

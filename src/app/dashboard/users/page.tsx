@@ -11,6 +11,9 @@ import {
     BookOpen,
     MoreVertical,
     UserPlus,
+    KeyRound,
+    Copy,
+    Check,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
@@ -108,6 +111,126 @@ function useCreateUser() {
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
     });
+}
+
+function useResetPassword() {
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`/api/users/${id}/reset-password`, { method: "POST" });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to reset password");
+            }
+            return res.json() as Promise<{ tempPassword: string }>;
+        },
+    });
+}
+
+function ResetPasswordDialog({
+    user,
+    onOpenChange,
+}: {
+    user: UserRecord | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [tempPassword, setTempPassword] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const { mutate: resetPassword, isPending, error } = useResetPassword();
+
+    const handleClose = (next: boolean) => {
+        if (!next) {
+            setTempPassword(null);
+            setCopied(false);
+        }
+        onOpenChange(next);
+    };
+
+    const handleConfirm = () => {
+        if (!user) return;
+        resetPassword(user.id, {
+            onSuccess: (data) => setTempPassword(data.tempPassword),
+        });
+    };
+
+    const handleCopy = () => {
+        if (!tempPassword) return;
+        navigator.clipboard.writeText(tempPassword);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <Dialog open={!!user} onOpenChange={handleClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Reset Password</DialogTitle>
+                    <DialogDescription>
+                        {tempPassword
+                            ? "A new temporary password has been generated and emailed to the account."
+                            : `Generate a new temporary password for ${user?.firstName} ${user?.lastName}? Their current password will stop working immediately.`}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 p-5">
+                    {error && (
+                        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                            {error.message}
+                        </p>
+                    )}
+                    {tempPassword && (
+                        <div>
+                            <Label className="mb-2 normal-case">Temporary Password</Label>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 font-mono text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    {tempPassword}
+                                </code>
+                                <button
+                                    type="button"
+                                    onClick={handleCopy}
+                                    aria-label="Copy temporary password"
+                                    className="rounded-lg border border-gray-200 p-2.5 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                                >
+                                    {copied ? (
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                    ) : (
+                                        <Copy className="h-4 w-4 text-gray-500" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter className="-mx-5 mt-2 -mb-5">
+                    {tempPassword ? (
+                        <button
+                            type="button"
+                            onClick={() => handleClose(false)}
+                            className="bg-navy-800 hover:bg-navy-700 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all"
+                        >
+                            Done
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => handleClose(false)}
+                                className="rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirm}
+                                disabled={isPending}
+                                className="bg-navy-800 hover:bg-navy-700 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
+                            >
+                                {isPending ? "Resetting…" : "Reset Password"}
+                            </button>
+                        </>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function CreateUserDialog({
@@ -305,6 +428,7 @@ export default function UsersPage() {
     const [roleFilter, setRoleFilter] = useState("");
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const [resetPasswordUser, setResetPasswordUser] = useState<UserRecord | null>(null);
 
     const { data: users, isLoading } = useUsers(roleFilter || undefined);
     const { mutate: updateUser, isPending } = useUpdateUser();
@@ -338,6 +462,10 @@ export default function UsersPage() {
             </div>
 
             <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
+            <ResetPasswordDialog
+                user={resetPasswordUser}
+                onOpenChange={(open) => !open && setResetPasswordUser(null)}
+            />
 
             {/* Filters */}
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -511,6 +639,16 @@ export default function UsersPage() {
                                                                         : "Student"}
                                                                 </button>
                                                             )}
+                                                            <button
+                                                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left font-medium transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+                                                                onClick={() => {
+                                                                    setResetPasswordUser(u);
+                                                                    setActiveMenu(null);
+                                                                }}
+                                                            >
+                                                                <KeyRound className="h-3.5 w-3.5" />
+                                                                Reset Password
+                                                            </button>
                                                         </div>
                                                     )}
                                                 </div>
