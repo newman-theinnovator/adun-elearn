@@ -5,13 +5,26 @@ export const loginSchema = z.object({
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
+// School/Faculty/Department/Year/Number, e.g. ADUN/FS/SEN/22/041
+export const MATRIC_NUMBER_REGEX = /^ADUN\/[A-Z]{2,4}\/[A-Z]{2,4}\/\d{2}\/\d{3,4}$/;
+export const MATRIC_NUMBER_FORMAT_HINT =
+    "ADUN/FS/SEN/22/041 (School/Faculty/Department/Year/Number)";
+
+const matricNumberField = z
+    .string()
+    .regex(MATRIC_NUMBER_REGEX, {
+        message: `Matric number must follow the format ${MATRIC_NUMBER_FORMAT_HINT}`,
+    })
+    .optional()
+    .or(z.literal(""));
+
 export const userAdminCreateSchema = z.object({
     firstName: z.string().min(2, { message: "First name is required" }),
     lastName: z.string().min(2, { message: "Last name is required" }),
     email: z.string().email({ message: "Invalid email address" }),
     role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).default("STUDENT"),
     level: z.number().optional(),
-    matricNumber: z.string().optional(),
+    matricNumber: matricNumberField,
     staffId: z.string().optional(),
 });
 
@@ -76,8 +89,14 @@ export const activityLogSchema = z.object({
 });
 
 export const userUpdateSchema = z.object({
+    firstName: z.string().min(2, { message: "First name is required" }).optional(),
+    lastName: z.string().min(2, { message: "Last name is required" }).optional(),
+    email: z.string().email({ message: "Invalid email address" }).optional(),
     role: z.enum(["STUDENT", "LECTURER", "ADMIN"]).optional(),
     isActive: z.boolean().optional(),
+    level: z.number().nullable().optional(),
+    matricNumber: matricNumberField,
+    staffId: z.string().optional().or(z.literal("")),
 });
 
 export const assessmentSubmitSchema = z.object({

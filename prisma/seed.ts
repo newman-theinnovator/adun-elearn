@@ -305,6 +305,10 @@ async function main() {
         "Ojo",
     ];
 
+    // Admission year (2-digit) per level, so a 400L student's matric year is
+    // earlier than a 200L student's — e.g. level 400 → admitted "22".
+    const admissionYearByLevel: Record<number, string> = { 200: "24", 300: "23", 400: "22" };
+
     const students: any[] = [];
     for (let i = 0; i < 40; i++) {
         const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
@@ -313,6 +317,9 @@ async function main() {
         // student to 100L would leave them with zero eligible courses and a
         // permanently blank dashboard, so we don't generate that level.
         const levelCode = [200, 300, 400][i % 3];
+
+        // School/Faculty/Department/Year/Number, e.g. ADUN/FS/SEN/22/041
+        const matricNumber = `ADUN/FS/SEN/${admissionYearByLevel[levelCode]}/${String(i + 1).padStart(3, "0")}`;
 
         const student = await prisma.user.create({
             data: {
@@ -323,7 +330,7 @@ async function main() {
                 role: "STUDENT",
                 department,
                 level: levelCode,
-                matricNumber: `SWE/${levelCode}/${1000 + i}`,
+                matricNumber,
                 isActive: true,
             },
         });
