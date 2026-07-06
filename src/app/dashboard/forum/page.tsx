@@ -6,7 +6,6 @@ import {
     useForumPosts,
     useCreateReply,
     useForumThread,
-    useCreatePost,
     useLikePost,
     useLikeReply,
     usePinThread,
@@ -16,8 +15,6 @@ import { MessageSquare, ThumbsUp, Send, Plus, Pin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
@@ -25,113 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-// ─── New Discussion Modal ────────────────────────────────────────────────────
-function NewPostModal({
-    open,
-    onClose,
-    defaultCourseId,
-}: {
-    open: boolean;
-    onClose: () => void;
-    defaultCourseId: string;
-}) {
-    const { data: courses } = useCourses();
-    const { mutate: createPost, isPending } = useCreatePost();
-    const [title, setTitle] = useState("");
-    const [body, setBody] = useState("");
-    const [courseId, setCourseId] = useState(defaultCourseId !== "all" ? defaultCourseId : "");
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title.trim() || !body.trim() || !courseId) return;
-        createPost({ title, body, courseId }, { onSuccess: onClose });
-    };
-
-    return (
-        <Dialog
-            open={open}
-            onOpenChange={(next) => {
-                if (!next) onClose();
-            }}
-        >
-            <DialogContent className="max-w-xl p-0">
-                <DialogHeader className="px-6 py-4">
-                    <DialogTitle>New Discussion</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 p-6">
-                    <div>
-                        <Label htmlFor="new-post-course" className="mb-2 normal-case">
-                            Course
-                        </Label>
-                        <Select value={courseId} onValueChange={setCourseId}>
-                            <SelectTrigger id="new-post-course" aria-label="Select a course">
-                                <SelectValue placeholder="Select a course…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {(courses || []).map((c: any) => (
-                                    <SelectItem key={c.id} value={c.id}>
-                                        {c.code} — {c.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <Label htmlFor="new-post-title" className="mb-2 normal-case">
-                            Title
-                        </Label>
-                        <Input
-                            id="new-post-title"
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            placeholder="What would you like to discuss?"
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="new-post-body" className="mb-2 normal-case">
-                            Body
-                        </Label>
-                        <textarea
-                            id="new-post-body"
-                            value={body}
-                            onChange={(e) => setBody(e.target.value)}
-                            required
-                            rows={5}
-                            placeholder="Share your question or thoughts in detail…"
-                            className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                        />
-                    </div>
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isPending || !title.trim() || !body.trim() || !courseId}
-                            className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
-                        >
-                            {isPending ? (
-                                "Posting…"
-                            ) : (
-                                <>
-                                    <Send className="h-4 w-4" /> Post Discussion
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
-    );
-}
+import { NewPostModal } from "@/components/forum/NewPostModal";
 
 // ─── Thread View ─────────────────────────────────────────────────────────────
 function ThreadView({ threadId, onBack }: { threadId: string; onBack: () => void }) {

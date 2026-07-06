@@ -25,6 +25,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NewPostModal } from "@/components/forum/NewPostModal";
 
 export default function CourseDetailPage() {
     const { id } = useParams() as { id: string };
@@ -36,6 +37,7 @@ export default function CourseDetailPage() {
         "content"
     );
     const [expandedModule, setExpandedModule] = useState<string | null>(null);
+    const [showNewThread, setShowNewThread] = useState(false);
 
     const { data: course, isLoading: courseLoading } = useCourse(id);
     const { data: assessments } = useAssessments();
@@ -307,12 +309,43 @@ export default function CourseDetailPage() {
                                                 <span className="rounded bg-gray-100 px-2 py-0.5 font-medium dark:bg-gray-700 dark:text-gray-300">
                                                     {a.totalMarks} points
                                                 </span>
-                                                {a.timeLimit && (
+                                                {a.duration && (
                                                     <span className="rounded bg-gray-100 px-2 py-0.5 font-medium dark:bg-gray-700 dark:text-gray-300">
-                                                        {a.timeLimit} min timer
+                                                        {a.duration} min timer
                                                     </span>
                                                 )}
                                             </div>
+
+                                            {(() => {
+                                                const mySubmission = (a as any).submissions?.find(
+                                                    (s: any) => s.userId === user?.id
+                                                );
+                                                if (!mySubmission) return null;
+                                                return (
+                                                    <div
+                                                        className={`mt-3 flex items-center gap-2 rounded-lg border p-2.5 text-xs ${mySubmission.status === "GRADED" ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-900/20" : "border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/20"}`}
+                                                    >
+                                                        {mySubmission.status === "GRADED" ? (
+                                                            <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                                                                Graded: {mySubmission.score} /{" "}
+                                                                {a.totalMarks} (
+                                                                {Math.round(
+                                                                    (mySubmission.score /
+                                                                        a.totalMarks) *
+                                                                        100
+                                                                )}
+                                                                %)
+                                                                {mySubmission.feedback &&
+                                                                    ` — "${mySubmission.feedback}"`}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="font-bold text-blue-700 dark:text-blue-400">
+                                                                Submitted — awaiting grade
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="mt-2 flex flex-row items-center justify-between gap-2 border-t border-gray-100 pt-2 sm:mt-0 sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:pt-0 dark:border-gray-700">
                                             <span
@@ -323,12 +356,25 @@ export default function CourseDetailPage() {
                                             <p className="flex items-center gap-1 text-[10px] font-medium text-gray-500 sm:text-xs dark:text-gray-400">
                                                 <Clock className="h-3.5 w-3.5 text-gray-400" />
                                                 Due:{" "}
-                                                {new Date(a.dueDate).toLocaleDateString("en-NG", {
-                                                    month: "short",
-                                                    day: "numeric",
-                                                    year: "numeric",
-                                                })}
+                                                {a.dueDate
+                                                    ? new Date(a.dueDate).toLocaleDateString(
+                                                          "en-NG",
+                                                          {
+                                                              month: "short",
+                                                              day: "numeric",
+                                                              year: "numeric",
+                                                          }
+                                                      )
+                                                    : "Not set"}
                                             </p>
+                                            {(a.questions?.length ?? 0) > 0 && (
+                                                <a
+                                                    href="/dashboard/assessments"
+                                                    className="text-[10px] font-bold text-blue-600 hover:underline sm:text-xs dark:text-blue-400"
+                                                >
+                                                    View in Assessments →
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -343,7 +389,10 @@ export default function CourseDetailPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                                     Join the course conversation
                                 </p>
-                                <button className="scale-active-95 bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-md transition-all">
+                                <button
+                                    onClick={() => setShowNewThread(true)}
+                                    className="scale-active-95 bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-md transition-all"
+                                >
                                     <MessageSquare className="h-4 w-4" /> New Thread
                                 </button>
                             </div>
@@ -464,19 +513,25 @@ export default function CourseDetailPage() {
                                         </div>
                                         <div className="flex items-center justify-between border-b border-gray-50 pb-2 dark:border-gray-700/50">
                                             <span className="text-gray-500 dark:text-gray-400">
-                                                Semester
+                                                Credits
                                             </span>
-                                            <span className="font-semibold text-gray-700 capitalize dark:text-gray-200">
-                                                {course.semester}
+                                            <span className="font-semibold text-gray-700 dark:text-gray-200">
+                                                {course.unit} Unit{course.unit === 1 ? "" : "s"}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <span className="text-gray-500 dark:text-gray-400">
                                                 Status
                                             </span>
-                                            <span className="rounded bg-blue-50 px-2 py-0.5 font-semibold text-blue-600 capitalize dark:bg-blue-900/30 dark:text-blue-400">
-                                                Active
-                                            </span>
+                                            {course.semester === "First" ? (
+                                                <span className="rounded bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-600 capitalize dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                    Completed
+                                                </span>
+                                            ) : (
+                                                <span className="rounded bg-blue-50 px-2 py-0.5 font-semibold text-blue-600 capitalize dark:bg-blue-900/30 dark:text-blue-400">
+                                                    Active
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -534,6 +589,13 @@ export default function CourseDetailPage() {
                     )}
                 </div>
             </div>
+
+            <NewPostModal
+                open={showNewThread}
+                onClose={() => setShowNewThread(false)}
+                defaultCourseId={course.id}
+                lockCourse
+            />
         </div>
     );
 }

@@ -80,7 +80,7 @@ export default function AssessmentsPage() {
                             </h2>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                 {activeQuiz.course?.code} • {activeQuiz.totalMarks} points •{" "}
-                                {activeQuiz.timeLimit} minutes
+                                {activeQuiz.duration} minutes
                             </p>
                         </div>
                         <button
@@ -303,14 +303,18 @@ export default function AssessmentsPage() {
                                             <span className="rounded-md border border-gray-200 px-2 py-0.5 dark:border-gray-600">
                                                 {a.totalMarks} marks
                                             </span>
-                                            {a.timeLimit && (
+                                            {a.duration && (
                                                 <span className="flex items-center gap-1 rounded-md border border-gray-200 px-2 py-0.5 dark:border-gray-600">
-                                                    <Clock className="h-3 w-3" /> {a.timeLimit} min
+                                                    <Clock className="h-3 w-3" /> {a.duration} min
                                                 </span>
                                             )}
                                             <span className="flex items-center gap-1 rounded-md border border-red-100 px-2 py-0.5 text-red-600 dark:border-red-900/30 dark:text-red-400">
                                                 <Clock className="h-3 w-3" /> Due{" "}
-                                                {new Date(a.dueDate).toLocaleDateString("en-NG")}
+                                                {a.dueDate
+                                                    ? new Date(a.dueDate).toLocaleDateString(
+                                                          "en-NG"
+                                                      )
+                                                    : "Not set"}
                                             </span>
                                         </div>
 

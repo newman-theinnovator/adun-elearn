@@ -22,8 +22,8 @@ export interface AssessmentWithDetails {
     type: string;
     courseId: string;
     totalMarks: number;
-    dueDate: string;
-    timeLimit: number;
+    dueDate: string | null;
+    duration: number | null;
     isPublished: boolean;
     course: { code: string; title: string };
     questions?: Question[];

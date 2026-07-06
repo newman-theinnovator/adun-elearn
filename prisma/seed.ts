@@ -30,6 +30,16 @@ async function main() {
     const hashedPassword = hashSync("password123", 10);
     const department = "Software Engineering";
 
+    function daysAgo(days: number) {
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d;
+    }
+
+    function randomInt(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
     // 1. Admin
     console.log("Creating Admin...");
     await prisma.user.create({
@@ -138,6 +148,17 @@ async function main() {
         { contentIds: string[]; quizId: string; assignmentId: string }
     > = {};
 
+    // Real, publicly-reachable sample media so course content actually plays/
+    // downloads in a live demo instead of linking to fake example.com URLs.
+    const sampleVideos = [
+        "https://www.w3schools.com/html/mov_bbb.mp4",
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    ];
+    const sampleDocs = [
+        "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    ];
+
     for (let i = 0; i < coursesData.length; i++) {
         const course = await prisma.course.create({
             data: {
@@ -149,32 +170,63 @@ async function main() {
         });
         courses.push(course);
 
-        // Create Module + Content for each course
-        const mod = await prisma.module.create({
-            data: { title: "Module 1: Fundamentals", order: 1, courseId: course.id },
+        // Module 1: Fundamentals
+        const mod1 = await prisma.module.create({
+            data: { title: "Fundamentals", order: 1, courseId: course.id },
         });
-        const lecture = await prisma.content.create({
+        const lecture1 = await prisma.content.create({
             data: {
-                title: "Course Overview Lecture",
+                title: `Lecture 1: Introduction to ${course.title}`,
                 type: "VIDEO",
-                url: "https://example.com/video.mp4",
-                duration: 60,
+                url: sampleVideos[i % sampleVideos.length],
+                duration: 45,
                 order: 1,
-                moduleId: mod.id,
+                moduleId: mod1.id,
             },
         });
-        const reading = await prisma.content.create({
+        const reading1 = await prisma.content.create({
             data: {
-                title: "Reading Material",
+                title: "Lecture Notes: Chapter 1 Handout",
                 type: "DOCUMENT",
-                url: "https://example.com/reading.pdf",
+                url: sampleDocs[i % sampleDocs.length],
                 duration: 0,
                 order: 2,
-                moduleId: mod.id,
+                moduleId: mod1.id,
             },
         });
 
-        // Create Assessments for every course
+        // Module 2: Advanced Topics
+        const mod2 = await prisma.module.create({
+            data: {
+                title: "Advanced Topics & Case Studies",
+                order: 2,
+                courseId: course.id,
+            },
+        });
+        const lecture2 = await prisma.content.create({
+            data: {
+                title: `Lecture 2: Core Concepts in ${course.code}`,
+                type: "VIDEO",
+                url: sampleVideos[(i + 1) % sampleVideos.length],
+                duration: 50,
+                order: 1,
+                moduleId: mod2.id,
+            },
+        });
+        const reading2 = await prisma.content.create({
+            data: {
+                title: "Recommended Reading & Reference Slides",
+                type: "DOCUMENT",
+                url: sampleDocs[(i + 1) % sampleDocs.length],
+                duration: 0,
+                order: 2,
+                moduleId: mod2.id,
+            },
+        });
+
+        // Assessments — First Semester courses are already complete (past due
+        // dates); Second Semester courses are still ongoing (due dates ahead).
+        const isCompletedSemester = course.semester === "First";
         const quiz = await prisma.assessment.create({
             data: {
                 title: `Mid-Semester Quiz - ${course.code}`,
@@ -182,6 +234,8 @@ async function main() {
                 courseId: course.id,
                 totalMarks: 30,
                 passMark: 15,
+                duration: 30,
+                dueDate: isCompletedSemester ? daysAgo(45) : daysAgo(-21),
                 isPublished: true,
             },
         });
@@ -192,12 +246,13 @@ async function main() {
                 courseId: course.id,
                 totalMarks: 40,
                 passMark: 20,
+                dueDate: isCompletedSemester ? daysAgo(30) : daysAgo(-35),
                 isPublished: true,
             },
         });
 
         courseExtras[course.id] = {
-            contentIds: [lecture.id, reading.id],
+            contentIds: [lecture1.id, reading1.id, lecture2.id, reading2.id],
             quizId: quiz.id,
             assignmentId: assignment.id,
         };
@@ -344,16 +399,6 @@ async function main() {
     const courseEnrolledStudents: Record<string, string[]> = {};
     for (const e of enrollmentsData) {
         (courseEnrolledStudents[e.courseId] ??= []).push(e.userId);
-    }
-
-    function daysAgo(days: number) {
-        const d = new Date();
-        d.setDate(d.getDate() - days);
-        return d;
-    }
-
-    function randomInt(min: number, max: number) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     // 7. Quiz questions, submissions, answers & content progress — this is what

@@ -35,13 +35,25 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
 
-    // Generate title from pathname
+    // Generate title from pathname. Dynamic route segments (course/thread/user
+    // ids) are database identifiers, not words — fall back to a label based on
+    // the parent segment instead of rendering the raw id.
     const pathSegments = pathname.split("/").filter(Boolean);
     const currentSegment = pathSegments[pathSegments.length - 1] || "dashboard";
+    const parentSegment = pathSegments[pathSegments.length - 2];
+    const isRawIdSegment = /^[a-z0-9]{20,}$/i.test(currentSegment);
+    const dynamicSegmentLabels: Record<string, string> = {
+        courses: "Course Details",
+        forum: "Discussion Thread",
+        users: "User Details",
+        assessments: "Assessment Details",
+    };
     const title =
         currentSegment === "dashboard"
             ? `${user.role?.toLowerCase()} Dashboard`
-            : currentSegment.replace(/-/g, " ");
+            : isRawIdSegment
+              ? dynamicSegmentLabels[parentSegment] || "Details"
+              : currentSegment.replace(/-/g, " ");
 
     const roleColors: Record<string, string> = {
         STUDENT: "bg-emerald-500",

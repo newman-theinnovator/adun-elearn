@@ -30,12 +30,19 @@ export async function GET(_req: Request) {
                 },
                 include: {
                     course: { select: { code: true, title: true } },
+                    questions: { orderBy: { order: "asc" } },
                     submissions: {
                         where: { userId: session.user.id },
                     },
                 },
                 orderBy: { dueDate: "asc" },
             });
+
+            // Strip correct answers so students can't cheat via the network tab
+            assessments = assessments.map((a) => ({
+                ...a,
+                questions: a.questions.map(({ correctAnswer: _correctAnswer, ...q }) => q),
+            }));
         } else {
             // Lecturers see all assessments for their courses. Admins see all.
             const where =
@@ -47,6 +54,7 @@ export async function GET(_req: Request) {
                 where,
                 include: {
                     course: { select: { code: true, title: true } },
+                    questions: { orderBy: { order: "asc" } },
                     _count: { select: { submissions: true } },
                 },
                 orderBy: { createdAt: "desc" },
