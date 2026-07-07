@@ -13,8 +13,10 @@ export interface ForumPost {
 }
 
 export interface ForumThread extends ForumPost {
+    authorId: string;
     replies: {
         id: string;
+        authorId: string;
         body: string;
         createdAt: string;
         likes: number;
@@ -140,6 +142,43 @@ export function usePinThread() {
             return res.json();
         },
         onSuccess: (_, threadId) => {
+            queryClient.invalidateQueries({ queryKey: ["forum", "thread", threadId] });
+            queryClient.invalidateQueries({ queryKey: ["forum", "posts"] });
+        },
+    });
+}
+
+export function useDeletePost() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (threadId: string) => {
+            const res = await fetch(`/api/forum/${threadId}`, { method: "DELETE" });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to delete thread");
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["forum", "posts"] });
+        },
+    });
+}
+
+export function useDeleteReply() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ replyId }: { replyId: string; threadId: string }) => {
+            const res = await fetch(`/api/forum/replies/${replyId}`, { method: "DELETE" });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to delete reply");
+            }
+            return res.json();
+        },
+        onSuccess: (_, { threadId }) => {
             queryClient.invalidateQueries({ queryKey: ["forum", "thread", threadId] });
             queryClient.invalidateQueries({ queryKey: ["forum", "posts"] });
         },

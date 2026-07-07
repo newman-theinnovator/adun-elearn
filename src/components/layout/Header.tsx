@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -34,6 +34,23 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
     const { theme, setTheme } = useTheme();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const notificationsRef = useRef<HTMLDivElement>(null);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close either dropdown when the user clicks anywhere outside of it —
+    // previously they only closed via their own toggle button.
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+                setShowNotifications(false);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+                setShowUserMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Generate title from pathname. Dynamic route segments (course/thread/user
     // ids) are database identifiers, not words — fall back to a label based on
@@ -112,7 +129,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </button>
 
                     {/* Notifications */}
-                    <div className="relative">
+                    <div className="relative" ref={notificationsRef}>
                         <button
                             onClick={() => {
                                 setShowNotifications(!showNotifications);
@@ -150,7 +167,9 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                             You&apos;re all caught up! 🎉
                                         </div>
                                     ) : (
-                                        notificationList.slice(0, 6).map((n) => (
+                                        // The list arrives oldest-first; take the most recent
+                                        // few while preserving that chronological order.
+                                        notificationList.slice(-6).map((n) => (
                                             <div
                                                 key={n.id}
                                                 className={`border-b border-gray-50 px-4 py-3 text-sm dark:border-gray-700 ${!n.isRead ? "bg-navy-50 dark:bg-navy-900/20" : ""}`}
@@ -172,7 +191,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                     </div>
 
                     {/* User Menu */}
-                    <div className="relative">
+                    <div className="relative" ref={userMenuRef}>
                         <button
                             onClick={() => {
                                 setShowUserMenu(!showUserMenu);
