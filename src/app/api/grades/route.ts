@@ -111,6 +111,16 @@ export async function PUT(req: Request) {
             },
         });
 
+        // Grade alert — notify the student their result is in/updated
+        await prisma.notification.create({
+            data: {
+                userId: gradeRecord.userId,
+                title: "Grade posted",
+                message: `Your grade for ${course?.code ?? "a course"} (${gradeRecord.semester} Semester, ${gradeRecord.session}) is now ${letterGrade} (${total}%).`,
+                link: "/dashboard/gradebook",
+            },
+        });
+
         return apiSuccess(updated);
     } catch (error) {
         if (error instanceof z.ZodError) {

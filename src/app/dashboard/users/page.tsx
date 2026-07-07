@@ -375,8 +375,13 @@ function CreateUserDialog({
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            placeholder="name@adun.edu.ng or any real email address"
                             required
                         />
+                        <p className="mt-1.5 text-xs text-gray-400">
+                            Any real address works — e.g. Gmail — the temporary password is sent
+                            there.
+                        </p>
                     </div>
                     <div>
                         <Label htmlFor="new-user-role" className="mb-2 normal-case">

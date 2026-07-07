@@ -54,6 +54,17 @@ export default function GradebookPage() {
         session: g.session,
     }));
 
+    // Group into per-session, per-semester sections — newest first — so the
+    // full academic history is visible, not just whichever record happened
+    // to load first.
+    const sections = new Map<string, typeof grades>();
+    for (const g of grades) {
+        const key = `${g.session} — ${g.semester} Semester`;
+        if (!sections.has(key)) sections.set(key, []);
+        sections.get(key)!.push(g);
+    }
+    const sortedSections = Array.from(sections.entries()).sort(([a], [b]) => b.localeCompare(a));
+
     const gradeVariant = (grade: string): "success" | "info" | "warning" | "destructive" => {
         if (grade.startsWith("A")) return "success";
         if (grade.startsWith("B")) return "info";
@@ -110,90 +121,93 @@ export default function GradebookPage() {
                 </Card>
             </div>
 
-            {/* Grades Table */}
-            <Card>
-                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-5 dark:border-gray-700 dark:bg-gray-800/50">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200">
-                        Current Semester Transcripts
-                    </h3>
-                    {grades.length > 0 && (
-                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            {grades[0].session} — {grades[0].semester} Semester
-                        </span>
-                    )}
-                </div>
-                <Table>
-                    <TableHeader className="bg-gray-50/50 dark:bg-gray-800/50">
-                        <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
-                            <TableHead className="text-gray-600 dark:text-gray-300">
-                                Course Details
-                            </TableHead>
-                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
-                                CA1
-                            </TableHead>
-                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
-                                CA2
-                            </TableHead>
-                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
-                                Exam
-                            </TableHead>
-                            <TableHead className="bg-blue-50/50 text-center text-blue-600 dark:bg-blue-900/10 dark:text-blue-400">
-                                Total %
-                            </TableHead>
-                            <TableHead className="text-center text-gray-600 dark:text-gray-300">
-                                Grade
-                            </TableHead>
-                            <TableHead className="bg-emerald-50/50 text-center text-emerald-600 dark:bg-emerald-900/10 dark:text-emerald-400">
-                                GP
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {grades.map((g, i) => (
-                            <TableRow key={i}>
-                                <TableCell>
-                                    <p className="font-bold text-gray-900 dark:text-white">
-                                        {g.courseCode}
-                                    </p>
-                                    <p className="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        {g.courseTitle}
-                                    </p>
-                                </TableCell>
-                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
-                                    {g.quizAvg > 0 ? `${g.quizAvg}` : "—"}
-                                </TableCell>
-                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
-                                    {g.assignmentAvg > 0 ? `${g.assignmentAvg}` : "—"}
-                                </TableCell>
-                                <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
-                                    {g.examScore > 0 ? `${g.examScore}` : "—"}
-                                </TableCell>
-                                <TableCell className="bg-blue-50/20 text-center font-black text-gray-900 dark:bg-blue-900/5 dark:text-white">
-                                    {g.totalScore > 0 ? `${g.totalScore}%` : "—"}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <Badge
-                                        variant={gradeVariant(g.grade)}
-                                        className="border border-current/10 font-black shadow-sm"
-                                    >
-                                        {g.grade}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="bg-emerald-50/20 text-center font-black text-emerald-700 dark:bg-emerald-900/5 dark:text-emerald-400">
-                                    {g.gradePoint > 0 ? g.gradePoint.toFixed(1) : "—"}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-
-                {grades.length === 0 && (
-                    <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-                        <Award className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-                        <p className="font-medium">No recorded grades for this academic session.</p>
-                    </div>
-                )}
-            </Card>
+            {/* Grade History — one table per session/semester, most recent first,
+                so a student's full academic history is visible at a glance. */}
+            {sortedSections.length === 0 ? (
+                <Card className="py-12 text-center text-gray-500 dark:text-gray-400">
+                    <Award className="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
+                    <p className="font-medium">No recorded grades yet.</p>
+                </Card>
+            ) : (
+                sortedSections.map(([sectionLabel, sectionGrades], idx) => (
+                    <Card key={sectionLabel}>
+                        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-5 dark:border-gray-700 dark:bg-gray-800/50">
+                            <h3 className="font-bold text-gray-800 dark:text-gray-200">
+                                {sectionLabel}
+                            </h3>
+                            {idx === 0 && (
+                                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold tracking-wider text-blue-600 uppercase dark:bg-blue-900/30 dark:text-blue-400">
+                                    Most Recent
+                                </span>
+                            )}
+                        </div>
+                        <Table>
+                            <TableHeader className="bg-gray-50/50 dark:bg-gray-800/50">
+                                <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                                    <TableHead className="text-gray-600 dark:text-gray-300">
+                                        Course Details
+                                    </TableHead>
+                                    <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                        CA1
+                                    </TableHead>
+                                    <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                        CA2
+                                    </TableHead>
+                                    <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                        Exam
+                                    </TableHead>
+                                    <TableHead className="bg-blue-50/50 text-center text-blue-600 dark:bg-blue-900/10 dark:text-blue-400">
+                                        Total %
+                                    </TableHead>
+                                    <TableHead className="text-center text-gray-600 dark:text-gray-300">
+                                        Grade
+                                    </TableHead>
+                                    <TableHead className="bg-emerald-50/50 text-center text-emerald-600 dark:bg-emerald-900/10 dark:text-emerald-400">
+                                        GP
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sectionGrades.map((g, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell>
+                                            <p className="font-bold text-gray-900 dark:text-white">
+                                                {g.courseCode}
+                                            </p>
+                                            <p className="mt-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                {g.courseTitle}
+                                            </p>
+                                        </TableCell>
+                                        <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                            {g.quizAvg > 0 ? `${g.quizAvg}` : "—"}
+                                        </TableCell>
+                                        <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                            {g.assignmentAvg > 0 ? `${g.assignmentAvg}` : "—"}
+                                        </TableCell>
+                                        <TableCell className="text-center font-medium text-gray-600 dark:text-gray-300">
+                                            {g.examScore > 0 ? `${g.examScore}` : "—"}
+                                        </TableCell>
+                                        <TableCell className="bg-blue-50/20 text-center font-black text-gray-900 dark:bg-blue-900/5 dark:text-white">
+                                            {g.totalScore > 0 ? `${g.totalScore}%` : "—"}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge
+                                                variant={gradeVariant(g.grade)}
+                                                className="border border-current/10 font-black shadow-sm"
+                                            >
+                                                {g.grade}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="bg-emerald-50/20 text-center font-black text-emerald-700 dark:bg-emerald-900/5 dark:text-emerald-400">
+                                            {g.gradePoint > 0 ? g.gradePoint.toFixed(1) : "—"}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </Card>
+                ))
+            )}
         </div>
     );
 }
