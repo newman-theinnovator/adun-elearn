@@ -3,10 +3,10 @@
 import { useAuth } from "@/providers/AuthProvider";
 import {
     useStudentAnalytics,
-    useCourseAnalytics,
     useDepartmentAnalytics,
+    useLecturerAnalytics,
 } from "@/hooks/useAnalytics";
-import { TrendingUp, Brain, Activity, Download } from "lucide-react";
+import { TrendingUp, Brain, Activity, Download, ClipboardCheck, Users2 } from "lucide-react";
 import {
     XAxis,
     YAxis,
@@ -20,20 +20,29 @@ import {
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function AnalyticsPage() {
     const { data: session } = useAuth();
     const user = session?.user as any;
     const role = user?.role || "STUDENT";
 
-    const { data: studentData, isLoading: studentLoading } = useStudentAnalytics(user?.id);
-    const { data: adminData, isLoading: adminLoading } = useDepartmentAnalytics();
+    const { data: studentData, isLoading: studentLoading } = useStudentAnalytics(
+        role === "STUDENT" ? user?.id : ""
+    );
+    const { data: adminData, isLoading: adminLoading } = useDepartmentAnalytics(role === "ADMIN");
+    const { data: lecturerData, isLoading: lecturerLoading } = useLecturerAnalytics(
+        role === "LECTURER"
+    );
 
-    // NOTE: A lecturer analytics page would typically first fetch active courses or select a specific course
-    // We'll mimic the prototype's class general analytics view using department analytics if course is omitted, or a placeholder loading.
-    useCourseAnalytics("placeholder-course");
+    const isLoading =
+        !user ||
+        (role === "STUDENT" && studentLoading) ||
+        (role === "ADMIN" && adminLoading) ||
+        (role === "LECTURER" && lecturerLoading);
 
-    if (!user || studentLoading || adminLoading) {
+    if (isLoading) {
         return (
             <div className="mx-auto max-w-7xl space-y-6">
                 <Skeleton className="h-10 w-48" />
@@ -51,6 +60,70 @@ export default function AnalyticsPage() {
     // ------------------------------------------------------------------------
     if (role === "STUDENT") {
         if (!studentData) return <div>No data found.</div>;
+
+        const handleExportPDF = () => {
+            const doc = new jsPDF();
+            doc.setFontSize(20);
+            doc.text("Student Performance Report", 14, 22);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(
+                `${user.firstName} ${user.lastName} — Generated ${new Date().toLocaleString()}`,
+                14,
+                30
+            );
+
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("Performance Summary", 14, 45);
+            autoTable(doc, {
+                startY: 50,
+                head: [["Metric", "Value"]],
+                body: [
+                    ["Current CGPA", studentData.cgpa],
+                    [
+                        "Predicted Final Grade",
+                        `${studentData.predictions?.predictedScore || "N/A"}%`,
+                    ],
+                    ["Model Confidence", `${studentData.predictions?.confidence || 0}%`],
+                    ["Total Logins", String(studentData.engagement?.loginCount || 0)],
+                ],
+                theme: "grid",
+                headStyles: { fillColor: [59, 130, 246] },
+            });
+
+            doc.text("GPA Progression by Semester", 14, (doc as any).lastAutoTable.finalY + 15);
+            autoTable(doc, {
+                startY: (doc as any).lastAutoTable.finalY + 20,
+                head: [["Session — Semester", "GPA"]],
+                body: (studentData.gpaTrend || []).map((t) => [t.semester, t.gpa.toString()]),
+                theme: "striped",
+                headStyles: { fillColor: [16, 185, 129] },
+            });
+
+            doc.save("student-performance-report.pdf");
+        };
+
+        const handleExportCSV = () => {
+            let csv = "data:text/csv;charset=utf-8,";
+            csv += "Metric,Value\n";
+            csv += `Current CGPA,${studentData.cgpa}\n`;
+            csv += `Predicted Final Grade,${studentData.predictions?.predictedScore || "N/A"}%\n`;
+            csv += `Model Confidence,${studentData.predictions?.confidence || 0}%\n`;
+            csv += `Total Logins,${studentData.engagement?.loginCount || 0}\n\n`;
+            csv += "Session — Semester,GPA\n";
+            (studentData.gpaTrend || []).forEach((t) => {
+                csv += `${t.semester},${t.gpa}\n`;
+            });
+
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", "student-performance-report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
         return (
             <div className="mx-auto max-w-7xl space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -62,9 +135,20 @@ export default function AnalyticsPage() {
                             Track your academic progress and get personalized insights
                         </p>
                     </div>
-                    <button className="bg-navy-800 hover:bg-navy-700 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                        <Download className="h-4 w-4" /> Export Report
-                    </button>
+                    <div className="bg-navy-800 flex overflow-hidden rounded-lg shadow-md">
+                        <button
+                            onClick={handleExportPDF}
+                            className="hover:bg-navy-700 flex items-center gap-2 border-r border-blue-800 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                        >
+                            <Download className="h-4 w-4" /> PDF
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="hover:bg-navy-700 flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                        >
+                            <Download className="h-4 w-4" /> CSV
+                        </button>
+                    </div>
                 </div>
 
                 {/* Prediction Card */}
@@ -119,7 +203,8 @@ export default function AnalyticsPage() {
                     {/* GPA Trend */}
                     <Card className="rounded-xl p-5 transition-shadow hover:shadow-md">
                         <h3 className="mb-6 flex items-center gap-2 font-bold dark:text-white">
-                            <TrendingUp className="h-5 w-5 text-blue-500" /> GPA Progression
+                            <TrendingUp className="h-5 w-5 text-blue-500" /> GPA Progression Across
+                            Sessions
                         </h3>
                         <div className="h-64">
                             <ResponsiveContainer width="100%" height="100%">
@@ -131,7 +216,7 @@ export default function AnalyticsPage() {
                                     />
                                     <XAxis
                                         dataKey="semester"
-                                        tick={{ fontSize: 10 }}
+                                        tick={{ fontSize: 9 }}
                                         axisLine={false}
                                         tickLine={false}
                                     />
@@ -233,24 +318,289 @@ export default function AnalyticsPage() {
     }
 
     // ------------------------------------------------------------------------
-    // LECTURER / ADMIN VIEW (Consolidated for brevity using Department Analytics as Admin is fully developed)
+    // LECTURER VIEW
+    // ------------------------------------------------------------------------
+    if (role === "LECTURER") {
+        if (!lecturerData) return null;
+
+        const handleExportPDF = () => {
+            const doc = new jsPDF();
+            doc.setFontSize(20);
+            doc.text("Lecturer Performance Report", 14, 22);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(
+                `${user.firstName} ${user.lastName} — Generated ${new Date().toLocaleString()}`,
+                14,
+                30
+            );
+
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("Overview", 14, 45);
+            autoTable(doc, {
+                startY: 50,
+                head: [["Metric", "Value"]],
+                body: [
+                    ["Courses Taught", String(lecturerData.totalCourses)],
+                    ["Total Students", String(lecturerData.totalStudents)],
+                    ["Pending Grading", String(lecturerData.pendingGrading)],
+                    ["Class Pass Rate", `${lecturerData.passRate}%`],
+                ],
+                theme: "grid",
+                headStyles: { fillColor: [59, 130, 246] },
+            });
+
+            doc.text("Course Averages", 14, (doc as any).lastAutoTable.finalY + 15);
+            autoTable(doc, {
+                startY: (doc as any).lastAutoTable.finalY + 20,
+                head: [["Course", "Average Score"]],
+                body: lecturerData.courseAverages.map((c) => [
+                    `${c.code} — ${c.title}`,
+                    `${c.average}%`,
+                ]),
+                theme: "striped",
+                headStyles: { fillColor: [16, 185, 129] },
+            });
+
+            doc.save("lecturer-performance-report.pdf");
+        };
+
+        const handleExportCSV = () => {
+            let csv = "data:text/csv;charset=utf-8,";
+            csv += "Metric,Value\n";
+            csv += `Courses Taught,${lecturerData.totalCourses}\n`;
+            csv += `Total Students,${lecturerData.totalStudents}\n`;
+            csv += `Pending Grading,${lecturerData.pendingGrading}\n`;
+            csv += `Class Pass Rate,${lecturerData.passRate}%\n\n`;
+            csv += "Course,Average Score\n";
+            lecturerData.courseAverages.forEach((c) => {
+                csv += `${c.code} — ${c.title},${c.average}%\n`;
+            });
+
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", "lecturer-performance-report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        return (
+            <div className="mx-auto max-w-7xl space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold dark:text-white">Advanced Analytics</h1>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Performance across the courses you teach
+                        </p>
+                    </div>
+                    <div className="bg-navy-800 flex overflow-hidden rounded-lg shadow-md">
+                        <button
+                            onClick={handleExportPDF}
+                            className="hover:bg-navy-700 flex items-center gap-2 border-r border-blue-800 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                        >
+                            <Download className="h-4 w-4" /> PDF
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="hover:bg-navy-700 flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                        >
+                            <Download className="h-4 w-4" /> CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    {[
+                        {
+                            label: "Courses Taught",
+                            value: lecturerData.totalCourses,
+                            icon: ClipboardCheck,
+                        },
+                        {
+                            label: "Total Students",
+                            value: lecturerData.totalStudents,
+                            icon: Users2,
+                        },
+                        {
+                            label: "Pending Grading",
+                            value: lecturerData.pendingGrading,
+                            icon: ClipboardCheck,
+                        },
+                        {
+                            label: "Class Pass Rate",
+                            value: `${lecturerData.passRate}%`,
+                            icon: TrendingUp,
+                        },
+                    ].map((s, i) => (
+                        <Card
+                            key={i}
+                            className="rounded-xl p-5 transition-transform hover:-translate-y-1"
+                        >
+                            <s.icon className="mb-2 h-6 w-6 text-blue-500" />
+                            <p className="text-3xl font-black text-gray-900 dark:text-white">
+                                {s.value}
+                            </p>
+                            <p className="mt-2 text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                                {s.label}
+                            </p>
+                        </Card>
+                    ))}
+                </div>
+
+                <Card className="rounded-xl p-5 pb-8">
+                    <h3 className="mb-6 font-bold dark:text-white">Average Score by Course</h3>
+                    <div className="h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={lecturerData.courseAverages}>
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    strokeOpacity={0.1}
+                                    vertical={false}
+                                />
+                                <XAxis
+                                    dataKey="code"
+                                    tick={{ fontSize: 11 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 11 }}
+                                    domain={[0, 100]}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: "transparent" }}
+                                    contentStyle={{
+                                        borderRadius: "12px",
+                                        border: "none",
+                                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                                    }}
+                                />
+                                <Bar
+                                    dataKey="average"
+                                    fill="#3B82F6"
+                                    radius={[6, 6, 0, 0]}
+                                    barSize={40}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {lecturerData.courseAverages.length === 0 && (
+                        <p className="py-8 text-center text-sm text-gray-500">
+                            No graded submissions yet for your courses.
+                        </p>
+                    )}
+                </Card>
+            </div>
+        );
+    }
+
+    // ------------------------------------------------------------------------
+    // ADMIN VIEW
     // ------------------------------------------------------------------------
     if (!adminData) return null;
+
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        doc.setFontSize(20);
+        doc.text("Department Performance Report", 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.text("Overview Statistics", 14, 45);
+        autoTable(doc, {
+            startY: 50,
+            head: [["Metric", "Value"]],
+            body: [
+                ["Total Students", String(adminData.overview.totalStudents)],
+                ["Total Lecturers", String(adminData.overview.totalLecturers)],
+                ["Active Courses", String(adminData.overview.totalCourses)],
+                ["Department Average CGPA", adminData.overview.departmentAverageGPA],
+            ],
+            theme: "grid",
+            headStyles: { fillColor: [59, 130, 246] },
+        });
+
+        doc.text("Average GPA by Level", 14, (doc as any).lastAutoTable.finalY + 15);
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY + 20,
+            head: [["Academic Level", "Average CGPA"]],
+            body: adminData.performanceByLevel.map((item) => [
+                `${item.level} Level`,
+                item.averageGPA.toString(),
+            ]),
+            theme: "striped",
+            headStyles: { fillColor: [16, 185, 129] },
+        });
+
+        doc.text("Most Popular Courses", 14, (doc as any).lastAutoTable.finalY + 15);
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY + 20,
+            head: [["Course", "Enrolled Students"]],
+            body: adminData.popularCourses.map((c) => [
+                `${c.code} — ${c.title}`,
+                String(c.students),
+            ]),
+            theme: "striped",
+            headStyles: { fillColor: [245, 158, 11] },
+        });
+
+        doc.save("department-performance-report.pdf");
+    };
+
+    const handleExportCSV = () => {
+        let csv = "data:text/csv;charset=utf-8,";
+        csv += "Metric,Value\n";
+        csv += `Total Students,${adminData.overview.totalStudents}\n`;
+        csv += `Total Lecturers,${adminData.overview.totalLecturers}\n`;
+        csv += `Active Courses,${adminData.overview.totalCourses}\n`;
+        csv += `Department Average CGPA,${adminData.overview.departmentAverageGPA}\n\n`;
+        csv += "Academic Level,Average CGPA\n";
+        adminData.performanceByLevel.forEach((item) => {
+            csv += `${item.level} Level,${item.averageGPA}\n`;
+        });
+        csv += "\nCourse,Enrolled Students\n";
+        adminData.popularCourses.forEach((c) => {
+            csv += `${c.code} — ${c.title},${c.students}\n`;
+        });
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csv));
+        link.setAttribute("download", "department-performance-report.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold dark:text-white">
-                        {role === "ADMIN" ? "Department Analytics" : "Advanced Analytics"}
-                    </h1>
+                    <h1 className="text-2xl font-bold dark:text-white">Department Analytics</h1>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         High-level overview of system and student performance.
                     </p>
                 </div>
-                <button className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                    <Download className="h-4 w-4" /> Export Report Data
-                </button>
+                <div className="bg-navy-800 flex overflow-hidden rounded-lg shadow-md">
+                    <button
+                        onClick={handleExportPDF}
+                        className="hover:bg-navy-700 flex items-center gap-2 border-r border-blue-800 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                    >
+                        <Download className="h-4 w-4" /> PDF
+                    </button>
+                    <button
+                        onClick={handleExportCSV}
+                        className="hover:bg-navy-700 flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                    >
+                        <Download className="h-4 w-4" /> CSV
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

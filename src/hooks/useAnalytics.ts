@@ -74,7 +74,7 @@ export function useCourseAnalytics(courseId: string) {
     });
 }
 
-export function useDepartmentAnalytics() {
+export function useDepartmentAnalytics(enabled = true) {
     return useQuery<DepartmentAnalytics>({
         queryKey: ["analytics", "department"],
         queryFn: async () => {
@@ -82,5 +82,27 @@ export function useDepartmentAnalytics() {
             if (!res.ok) throw new Error("Failed to fetch department analytics");
             return res.json();
         },
+        enabled,
+    });
+}
+
+interface LecturerAnalytics {
+    pendingGrading: number;
+    passRate: number;
+    totalGraded: number;
+    totalCourses: number;
+    totalStudents: number;
+    courseAverages: { code: string; title: string; average: number }[];
+}
+
+export function useLecturerAnalytics(enabled: boolean) {
+    return useQuery<LecturerAnalytics>({
+        queryKey: ["analytics", "lecturer"],
+        queryFn: async () => {
+            const res = await fetch("/api/analytics/lecturer");
+            if (!res.ok) throw new Error("Failed to fetch lecturer analytics");
+            return res.json();
+        },
+        enabled,
     });
 }
