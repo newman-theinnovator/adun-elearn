@@ -135,10 +135,16 @@ export default function CoursesPage() {
                     filtered.map((c: any, idx: number) => {
                         // Placeholder logic since modules might not be eagerly loaded for list view
                         const progress = c.isEnrolled ? 45 : 0;
+                        // First Semester is already complete relative to the
+                        // current (Second Semester) session — dim it so the
+                        // still-active course stands out at a glance.
+                        const isCompleted = c.semester === "First";
 
                         return (
                             <Link key={c.id} href={`/dashboard/courses/${c.id}`}>
-                                <div className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                <div
+                                    className={`group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 ${isCompleted ? "opacity-60 hover:opacity-100" : ""}`}
+                                >
                                     <div
                                         className={`h-28 bg-gradient-to-br ${courseColors[idx % courseColors.length]} flex flex-col justify-between p-4`}
                                     >
@@ -147,7 +153,9 @@ export default function CoursesPage() {
                                                 {c.code}
                                             </span>
                                             <span className="rounded bg-white/10 px-2 py-0.5 text-xs font-medium text-white/80 shadow-sm">
-                                                {c.category || "General"}
+                                                {isCompleted
+                                                    ? "Completed"
+                                                    : c.category || "General"}
                                             </span>
                                         </div>
                                         <h3 className="line-clamp-2 text-lg leading-tight font-bold text-white drop-shadow-md group-hover:underline">

@@ -21,10 +21,11 @@ export async function GET() {
             })
         ).map((c) => c.id);
 
-        // Pending grading: submissions with status SUBMITTED (not yet GRADED)
+        // Pending grading: submissions not yet graded — SUBMITTED (on time)
+        // or LATE (submitted after the due date, but still needs marking).
         const pendingGrading = await prisma.submission.count({
             where: {
-                status: "SUBMITTED",
+                status: { in: ["SUBMITTED", "LATE"] },
                 assessment: { courseId: { in: courseIds } },
             },
         });

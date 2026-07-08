@@ -1,10 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Submission {
-    id: string;
-    score: number | null;
+    // Present on every submission; the only field guaranteed on the
+    // lightweight { status } shape the lecturer/admin assessment list uses.
     status: string;
-    fileUrl: string | null;
+    // Only present on the student's own submission (returned by the
+    // student-facing assessment list and the single-assessment fetch).
+    id?: string;
+    userId?: string;
+    score?: number | null;
+    fileUrl?: string | null;
+    feedback?: string | null;
+    submittedAt?: string;
+    gradedAt?: string | null;
 }
 
 interface Question {
@@ -74,6 +82,53 @@ export function useSubmitAssessment() {
             queryClient.invalidateQueries({ queryKey: ["assessments"] });
             queryClient.invalidateQueries({ queryKey: ["assessment", id] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] }); // Refresh grades
+        },
+    });
+}
+
+export interface SubmissionWithStudent extends Submission {
+    user: { id: string; firstName: string; lastName: string; matricNumber: string | null };
+    answers?: { questionId: string; answer: string; isCorrect: boolean | null }[];
+}
+
+export function useAssessmentSubmissions(assessmentId: string | null) {
+    return useQuery<{ assessment: AssessmentWithDetails; submissions: SubmissionWithStudent[] }>({
+        queryKey: ["assessment-submissions", assessmentId],
+        queryFn: async () => {
+            const res = await fetch(`/api/assessments/${assessmentId}/submissions`);
+            if (!res.ok) throw new Error("Failed to fetch submissions");
+            return res.json();
+        },
+        enabled: !!assessmentId,
+    });
+}
+
+export function useGradeSubmission() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (vars: {
+            id: string;
+            assessmentId: string;
+            score: number;
+            feedback?: string;
+        }) => {
+            const { id, score, feedback } = vars;
+            const res = await fetch(`/api/submissions/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score, feedback }),
+            });
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || "Failed to grade submission");
+            }
+            return res.json();
+        },
+        onSuccess: (_, { assessmentId }) => {
+            queryClient.invalidateQueries({ queryKey: ["assessment-submissions", assessmentId] });
+            queryClient.invalidateQueries({ queryKey: ["assessments"] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
         },
     });
 }

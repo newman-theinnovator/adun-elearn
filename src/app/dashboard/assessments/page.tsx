@@ -2,11 +2,46 @@
 
 import { useState, useRef } from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAssessments, useSubmitAssessment } from "@/hooks/useAssessments";
-import { ClipboardList, Clock, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import {
+    useAssessments,
+    useSubmitAssessment,
+    type AssessmentWithDetails,
+} from "@/hooks/useAssessments";
+import {
+    ClipboardList,
+    Clock,
+    CheckCircle2,
+    ChevronRight,
+    Loader2,
+    AlertTriangle,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SubmissionsModal } from "@/components/assessments/SubmissionsModal";
+
+// A single source of truth for what tab an assessment belongs in, so the
+// filter pills, the status badge, and the "can the student still act on
+// this" gating all agree with each other instead of drifting independently.
+type AssessmentBucket = "upcoming" | "active" | "graded" | "closed";
+
+function getStudentBucket(a: AssessmentWithDetails, userId?: string): AssessmentBucket {
+    if (!a.isPublished) return "upcoming";
+    const mySub = a.submissions?.find((s: any) => s.userId === userId);
+    if (mySub?.status === "GRADED") return "graded";
+    if (mySub) return "closed"; // submitted (on time or late), awaiting grade
+    const overdue = a.dueDate ? new Date(a.dueDate) < new Date() : false;
+    return overdue ? "closed" : "active"; // missed, or still open to submit
+}
+
+function getStaffBucket(a: AssessmentWithDetails): AssessmentBucket {
+    if (!a.isPublished) return "upcoming";
+    const subs = (a.submissions as any[]) || [];
+    const pending = subs.filter((s) => s.status === "SUBMITTED" || s.status === "LATE").length;
+    if (subs.length > 0 && pending === 0) return "graded"; // fully marked
+    const overdue = a.dueDate ? new Date(a.dueDate) < new Date() : false;
+    return overdue ? "closed" : "active";
+}
 
 export default function AssessmentsPage() {
     const { data: session } = useAuth();
@@ -18,6 +53,7 @@ export default function AssessmentsPage() {
     const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number | string>>({});
     const [quizSubmitted, setQuizSubmitted] = useState(false);
+    const [viewingSubmissionsFor, setViewingSubmissionsFor] = useState<string | null>(null);
 
     // Assignment file upload — real files go to Supabase storage via /api/upload,
     // then the resulting URL is attached to the submission.
@@ -78,31 +114,36 @@ export default function AssessmentsPage() {
         );
     }
 
-    // Handle local filtering states
+    // Each tab pill maps to a bucket computed by getStudentBucket/getStaffBucket
+    // — previously "active" only checked isPublished (true for nearly every
+    // assessment) and "upcoming"/"graded"/"closed" fell through to a bare
+    // `return true`, so every tab except "all" showed either everything or
+    // nothing, and already-graded work never reliably landed under Graded.
+    const isStudent = user?.role === "STUDENT";
     const filtered =
         filter === "all"
             ? assessments
             : assessments.filter((a) => {
-                  if (filter === "active") return a.isPublished;
-                  if (filter === "draft") return !a.isPublished;
-                  return true;
+                  const bucket = isStudent ? getStudentBucket(a, user?.id) : getStaffBucket(a);
+                  return bucket === filter;
               });
     const activeQuiz = assessments.find((a) => a.id === selectedQuiz);
 
     const handleQuizSubmit = () => {
         if (!activeQuiz) return;
 
-        // Structure the submission for the Prisma backend
-        // `quizAnswers` maps QuestionId -> AnswerValue
-        const submissionData = {
-            answers: Object.entries(quizAnswers).map(([questionId, value]) => ({
-                questionId,
-                value: value.toString(),
-            })),
-        };
+        // `quizAnswers` is already a Record<questionId, answer> — the API
+        // expects exactly that shape. It was previously being flattened into
+        // an array of {questionId, value} objects here, which silently broke
+        // every quiz's auto-grading (answers[question.id] was always
+        // undefined server-side, so every question scored 0).
+        const answers: Record<string, string> = {};
+        Object.entries(quizAnswers).forEach(([questionId, value]) => {
+            answers[questionId] = String(value);
+        });
 
         submitAssessment(
-            { id: activeQuiz.id, submission: submissionData },
+            { id: activeQuiz.id, submission: { answers } },
             {
                 onSuccess: () => {
                     setQuizSubmitted(true);
@@ -268,11 +309,20 @@ export default function AssessmentsPage() {
                     </p>
                 </div>
                 {user?.role !== "STUDENT" && (
-                    <button className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg">
+                    <button
+                        title="Coming soon"
+                        className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white opacity-60 shadow-md transition-all"
+                        disabled
+                    >
                         <ClipboardList className="h-4 w-4" /> Create Assessment
                     </button>
                 )}
             </div>
+
+            <SubmissionsModal
+                assessmentId={viewingSubmissionsFor}
+                onClose={() => setViewingSubmissionsFor(null)}
+            />
 
             {uploadError && (
                 <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
@@ -304,8 +354,18 @@ export default function AssessmentsPage() {
                     </Card>
                 ) : (
                     filtered.map((a) => {
-                        // Check if student has a submission for this assessment
-                        const sub = a.submissions?.find((s: any) => s.studentId === user?.id);
+                        // Bug: this used to compare `s.studentId`, a field that
+                        // doesn't exist on Submission (it's `userId`) — mySub
+                        // was always undefined, which is why graded/submitted
+                        // work always looked "Active" and Start Quiz/Upload
+                        // Work never disabled themselves after submitting.
+                        const mySub = isStudent
+                            ? a.submissions?.find((s: any) => s.userId === user?.id)
+                            : undefined;
+                        const bucket = isStudent
+                            ? getStudentBucket(a, user?.id)
+                            : getStaffBucket(a);
+                        const overdue = a.dueDate ? new Date(a.dueDate) < new Date() : false;
 
                         return (
                             <Card
@@ -327,23 +387,27 @@ export default function AssessmentsPage() {
                                             <Badge
                                                 pill
                                                 variant={
-                                                    sub?.status === "graded"
+                                                    bucket === "graded"
                                                         ? "success"
-                                                        : a.isPublished && !sub
+                                                        : bucket === "active"
                                                           ? "info"
-                                                          : !a.isPublished
+                                                          : bucket === "upcoming"
                                                             ? "secondary"
                                                             : "warning"
                                                 }
                                                 className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
                                             >
-                                                {sub?.status === "graded"
+                                                {bucket === "graded"
                                                     ? "Graded"
-                                                    : sub
-                                                      ? "Submitted"
-                                                      : a.isPublished
-                                                        ? "Active"
-                                                        : "Draft"}
+                                                    : bucket === "active"
+                                                      ? "Active"
+                                                      : bucket === "upcoming"
+                                                        ? "Draft"
+                                                        : isStudent
+                                                          ? mySub
+                                                              ? "Awaiting Grade"
+                                                              : "Missed"
+                                                          : "Closed"}
                                             </Badge>
                                         </div>
 
@@ -376,21 +440,30 @@ export default function AssessmentsPage() {
                                             </span>
                                         </div>
 
-                                        {sub && (
+                                        {mySub && (
                                             <div
-                                                className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-xs ${sub.status === "graded" ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-900/20" : "border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/20"}`}
+                                                className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-xs ${mySub.status === "GRADED" ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-900/20" : mySub.status === "LATE" ? "border-amber-100 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-900/20" : "border-blue-100 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/20"}`}
                                             >
-                                                {sub.status === "graded" ? (
+                                                {mySub.status === "GRADED" ? (
                                                     <>
                                                         <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50">
                                                             <CheckCircle2 className="h-4 w-4" />
                                                         </div>
                                                         <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                                                            Graded: {sub.score} / {a.totalMarks} (
+                                                            Graded: {mySub.score} / {a.totalMarks} (
                                                             {Math.round(
-                                                                (sub.score! / a.totalMarks) * 100
+                                                                (mySub.score! / a.totalMarks) * 100
                                                             )}
                                                             %)
+                                                        </span>
+                                                    </>
+                                                ) : mySub.status === "LATE" ? (
+                                                    <>
+                                                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-100 text-amber-600 dark:bg-amber-900/50">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        </div>
+                                                        <span className="font-bold text-amber-700 dark:text-amber-400">
+                                                            Submitted Late — Awaiting Grade
                                                         </span>
                                                     </>
                                                 ) : (
@@ -407,41 +480,63 @@ export default function AssessmentsPage() {
                                         )}
                                     </div>
 
-                                    <div className="mt-4 flex w-full items-center justify-between border-t border-gray-100 pt-4 sm:mt-0 sm:w-auto sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:pt-0 dark:border-gray-700">
+                                    <div className="mt-4 flex w-full flex-col items-end gap-1.5 border-t border-gray-100 pt-4 sm:mt-0 sm:w-auto sm:border-t-0 sm:pt-0 dark:border-gray-700">
                                         {a.type.toLowerCase() === "quiz" &&
                                             a.isPublished &&
                                             (a.questions?.length ?? 0) > 0 &&
-                                            user?.role === "STUDENT" &&
-                                            !sub && (
-                                                <button
-                                                    onClick={() => setSelectedQuiz(a.id)}
-                                                    className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto"
-                                                >
-                                                    Start Quiz <ChevronRight className="h-4 w-4" />
-                                                </button>
+                                            isStudent &&
+                                            !mySub && (
+                                                <>
+                                                    <button
+                                                        onClick={() => setSelectedQuiz(a.id)}
+                                                        className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto"
+                                                    >
+                                                        Start Quiz{" "}
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    </button>
+                                                    {overdue && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-medium text-red-500">
+                                                            <AlertTriangle className="h-3 w-3" />{" "}
+                                                            Past due — will be marked late
+                                                        </span>
+                                                    )}
+                                                </>
                                             )}
                                         {a.type.toLowerCase() === "assignment" &&
                                             a.isPublished &&
-                                            user?.role === "STUDENT" &&
-                                            !sub && (
-                                                <button
-                                                    onClick={() => handleUploadClick(a.id)}
-                                                    disabled={uploading && uploadTargetId === a.id}
-                                                    className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 sm:w-auto"
-                                                >
-                                                    {uploading && uploadTargetId === a.id ? (
-                                                        <>
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                            Uploading…
-                                                        </>
-                                                    ) : (
-                                                        "Upload Work"
+                                            isStudent &&
+                                            !mySub && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleUploadClick(a.id)}
+                                                        disabled={
+                                                            uploading && uploadTargetId === a.id
+                                                        }
+                                                        className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 sm:w-auto"
+                                                    >
+                                                        {uploading && uploadTargetId === a.id ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                Uploading…
+                                                            </>
+                                                        ) : (
+                                                            "Upload Work"
+                                                        )}
+                                                    </button>
+                                                    {overdue && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-medium text-red-500">
+                                                            <AlertTriangle className="h-3 w-3" />{" "}
+                                                            Past due — will be marked late
+                                                        </span>
                                                     )}
-                                                </button>
+                                                </>
                                             )}
-                                        {user?.role !== "STUDENT" && (
-                                            <button className="w-full rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-200 sm:w-auto dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                                                View Submissions
+                                        {!isStudent && (
+                                            <button
+                                                onClick={() => setViewingSubmissionsFor(a.id)}
+                                                className="w-full rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-200 sm:w-auto dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                            >
+                                                View Submissions ({a._count?.submissions ?? 0})
                                             </button>
                                         )}
                                     </div>
