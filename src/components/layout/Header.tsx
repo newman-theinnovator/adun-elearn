@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Bell, Menu, X, Sun, Moon, ChevronDown, User as UserIcon, LogOut } from "lucide-react";
 import Link from "next/link";
-import { useNotifications } from "@/hooks/useFeatures";
+import { useNotifications, useMarkNotificationRead } from "@/hooks/useFeatures";
 
 interface NotificationItem {
     id: string;
     title?: string;
     message?: string;
+    link?: string | null;
     isRead: boolean;
     createdAt: string;
 }
@@ -31,6 +32,7 @@ interface HeaderProps {
 
 export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const { theme, setTheme } = useTheme();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -85,6 +87,13 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
     const { data: notifications } = useNotifications();
     const notificationList = (notifications || []) as NotificationItem[];
     const unreadCount = notificationList.filter((n) => !n.isRead).length;
+    const { mutate: markRead } = useMarkNotificationRead();
+
+    const handleNotificationClick = (n: NotificationItem) => {
+        if (!n.isRead) markRead(n.id);
+        setShowNotifications(false);
+        if (n.link) router.push(n.link);
+    };
 
     return (
         <header className="glass sticky top-0 z-30 border-b border-gray-200 px-4 py-3 text-gray-900 transition-all duration-300 lg:px-8 lg:py-4 dark:border-gray-800 dark:text-white">
@@ -170,9 +179,11 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                         // The list arrives oldest-first; take the most recent
                                         // few while preserving that chronological order.
                                         notificationList.slice(-6).map((n) => (
-                                            <div
+                                            <button
                                                 key={n.id}
-                                                className={`border-b border-gray-50 px-4 py-3 text-sm dark:border-gray-700 ${!n.isRead ? "bg-navy-50 dark:bg-navy-900/20" : ""}`}
+                                                type="button"
+                                                onClick={() => handleNotificationClick(n)}
+                                                className={`block w-full border-b border-gray-50 px-4 py-3 text-left text-sm transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${!n.isRead ? "bg-navy-50 dark:bg-navy-900/20" : ""}`}
                                             >
                                                 <p className="line-clamp-1 font-medium dark:text-white">
                                                     {n.title || n.message}
@@ -182,7 +193,7 @@ export function Header({ user, sidebarOpen, setSidebarOpen }: HeaderProps) {
                                                         "en-NG"
                                                     )}
                                                 </p>
-                                            </div>
+                                            </button>
                                         ))
                                     )}
                                 </div>
