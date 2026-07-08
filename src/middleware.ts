@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+// Edge-safe auth only — middleware runs on the Edge runtime, where the
+// standard Prisma Client (used by the full auth() in "@/lib/auth" to
+// re-validate deactivated accounts) cannot run. See auth.config.ts.
+import { edgeAuth as auth } from "@/lib/auth.config";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function middleware(request: NextRequest) {
