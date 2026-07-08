@@ -15,10 +15,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ student
             return forbidden();
         }
 
-        // 1. Fetch Grades
+        // 1. Fetch Grades — ordered chronologically so the GPA trend chart
+        // reads left-to-right as an actual progression, not insertion order.
         const grades = await prisma.grade.findMany({
             where: { userId: studentId },
             include: { course: true },
+            orderBy: [{ session: "asc" }, { semester: "asc" }],
         });
 
         let totalPoints = 0;

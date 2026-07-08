@@ -1,5 +1,6 @@
 // Realistic seed for Software Engineering Department only – Final Year Project March 2026
-// Fully dynamic: First semester fully graded + Second semester ongoing + rich content
+// 3 academic sessions (2 fully completed + current), realistic multi-session student
+// progression, and a bell-shaped GPA distribution across a much larger cohort.
 
 import { PrismaClient } from "@prisma/client";
 import { hashSync } from "bcryptjs";
@@ -30,6 +31,53 @@ async function main() {
     const hashedPassword = hashSync("password123", 10);
     const department = "Software Engineering";
 
+    function daysAgo(days: number) {
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d;
+    }
+
+    function randomInt(min: number, max: number) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Average of 3 uniform draws approximates a bell curve centered at 0.5 —
+    // used as a per-student "ability" so a given student's grades are
+    // consistently strong/average/weak across courses and sessions instead of
+    // being independently random every time (which looked unrealistic).
+    function studentAbility() {
+        return (Math.random() + Math.random() + Math.random()) / 3;
+    }
+
+    function gradeFromTotal(total: number): { grade: string; gradePoint: number } {
+        if (total >= 70) return { grade: "A", gradePoint: 5 };
+        if (total >= 60) return { grade: "B", gradePoint: 4 };
+        if (total >= 50) return { grade: "C", gradePoint: 3 };
+        if (total >= 45) return { grade: "D", gradePoint: 2 };
+        if (total >= 40) return { grade: "E", gradePoint: 1 };
+        return { grade: "F", gradePoint: 0 };
+    }
+
+    // Builds a full CA1/CA2/Exam/Total/Grade record for one course, given a
+    // student's ability (0-1). Centered around a total score of ~60 (mean 42 +
+    // 0.5*36) with a ~7-point spread, so the distribution lands mostly in the
+    // B/C band (~85% of grades) with only ~8% reaching A and a small D/E/F
+    // tail — "mostly average, few high performers".
+    function generateGrade(ability: number) {
+        const base = 42 + ability * 36;
+        const noise = (Math.random() - 0.5) * 12;
+        const total = Math.max(30, Math.min(98, Math.round(base + noise)));
+
+        const examPct = 0.45 + Math.random() * 0.15;
+        const exam = Math.round(total * examPct);
+        const remaining = total - exam;
+        const ca1 = Math.round(remaining * (0.4 + Math.random() * 0.2));
+        const ca2 = remaining - ca1;
+
+        const { grade, gradePoint } = gradeFromTotal(total);
+        return { ca1, ca2, exam, total, grade, gradePoint };
+    }
+
     // 1. Admin
     console.log("Creating Admin...");
     await prisma.user.create({
@@ -44,7 +92,7 @@ async function main() {
         },
     });
 
-    // 2. Lecturers
+    // 2. Lecturers (8)
     console.log("Creating Lecturers...");
     const lecturersData = [
         { email: "n.eze@adun.edu.ng", firstName: "Ngozi", lastName: "Eze", staffId: "SWE-LEC-001" },
@@ -60,6 +108,36 @@ async function main() {
             lastName: "Bello",
             staffId: "SWE-LEC-003",
         },
+        {
+            email: "m.suleiman@adun.edu.ng",
+            firstName: "Musa",
+            lastName: "Suleiman",
+            staffId: "SWE-LEC-004",
+        },
+        {
+            email: "f.okonkwo@adun.edu.ng",
+            firstName: "Funmilayo",
+            lastName: "Okonkwo",
+            staffId: "SWE-LEC-005",
+        },
+        {
+            email: "e.igwe@adun.edu.ng",
+            firstName: "Emeka",
+            lastName: "Igwe",
+            staffId: "SWE-LEC-006",
+        },
+        {
+            email: "h.abubakar@adun.edu.ng",
+            firstName: "Halima",
+            lastName: "Abubakar",
+            staffId: "SWE-LEC-007",
+        },
+        {
+            email: "t.adewale@adun.edu.ng",
+            firstName: "Tunde",
+            lastName: "Adewale",
+            staffId: "SWE-LEC-008",
+        },
     ];
     const lecturers: any[] = [];
     for (const l of lecturersData) {
@@ -69,9 +147,39 @@ async function main() {
         lecturers.push(lec);
     }
 
-    // 3. Courses (First + Second Semester)
+    // 3. Courses (16, spanning all four levels)
     console.log("Creating Courses with Modules, Content & Assessments...");
     const coursesData = [
+        // 100 Level
+        {
+            code: "SWE 101",
+            title: "Introduction to Computing",
+            level: 100,
+            unit: 3,
+            semester: "First",
+        },
+        {
+            code: "SWE 102",
+            title: "Elementary Programming",
+            level: 100,
+            unit: 3,
+            semester: "First",
+        },
+        {
+            code: "SWE 103",
+            title: "Discrete Structures",
+            level: 100,
+            unit: 3,
+            semester: "Second",
+        },
+        {
+            code: "SWE 104",
+            title: "Computer Ethics & Society",
+            level: 100,
+            unit: 2,
+            semester: "Second",
+        },
+        // 200 Level
         {
             code: "SWE 201",
             title: "Introduction to Software Engineering",
@@ -87,8 +195,30 @@ async function main() {
             semester: "First",
         },
         {
+            code: "SWE 203",
+            title: "Data Structures & Algorithms",
+            level: 200,
+            unit: 3,
+            semester: "Second",
+        },
+        {
+            code: "SWE 204",
+            title: "Web Application Development",
+            level: 200,
+            unit: 3,
+            semester: "Second",
+        },
+        // 300 Level
+        {
             code: "SWE 301",
             title: "Object-Oriented Analysis & Design",
+            level: 300,
+            unit: 3,
+            semester: "First",
+        },
+        {
+            code: "SWE 305",
+            title: "Operating Systems",
             level: 300,
             unit: 3,
             semester: "First",
@@ -107,9 +237,17 @@ async function main() {
             unit: 3,
             semester: "Second",
         },
+        // 400 Level
         {
             code: "SWE 401",
             title: "Software Testing & Quality Assurance",
+            level: 400,
+            unit: 3,
+            semester: "First",
+        },
+        {
+            code: "SWE 405",
+            title: "Distributed Systems",
             level: 400,
             unit: 3,
             semester: "First",
@@ -138,6 +276,17 @@ async function main() {
         { contentIds: string[]; quizId: string; assignmentId: string }
     > = {};
 
+    // Real, publicly-reachable sample media so course content actually plays/
+    // downloads in a live demo instead of linking to fake example.com URLs.
+    const sampleVideos = [
+        "https://www.w3schools.com/html/mov_bbb.mp4",
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    ];
+    const sampleDocs = [
+        "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
+        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    ];
+
     for (let i = 0; i < coursesData.length; i++) {
         const course = await prisma.course.create({
             data: {
@@ -149,32 +298,63 @@ async function main() {
         });
         courses.push(course);
 
-        // Create Module + Content for each course
-        const mod = await prisma.module.create({
-            data: { title: "Module 1: Fundamentals", order: 1, courseId: course.id },
+        // Module 1: Fundamentals
+        const mod1 = await prisma.module.create({
+            data: { title: "Fundamentals", order: 1, courseId: course.id },
         });
-        const lecture = await prisma.content.create({
+        const lecture1 = await prisma.content.create({
             data: {
-                title: "Course Overview Lecture",
+                title: `Lecture 1: Introduction to ${course.title}`,
                 type: "VIDEO",
-                url: "https://example.com/video.mp4",
-                duration: 60,
+                url: sampleVideos[i % sampleVideos.length],
+                duration: 45,
                 order: 1,
-                moduleId: mod.id,
+                moduleId: mod1.id,
             },
         });
-        const reading = await prisma.content.create({
+        const reading1 = await prisma.content.create({
             data: {
-                title: "Reading Material",
+                title: "Lecture Notes: Chapter 1 Handout",
                 type: "DOCUMENT",
-                url: "https://example.com/reading.pdf",
+                url: sampleDocs[i % sampleDocs.length],
                 duration: 0,
                 order: 2,
-                moduleId: mod.id,
+                moduleId: mod1.id,
             },
         });
 
-        // Create Assessments for every course
+        // Module 2: Advanced Topics
+        const mod2 = await prisma.module.create({
+            data: {
+                title: "Advanced Topics & Case Studies",
+                order: 2,
+                courseId: course.id,
+            },
+        });
+        const lecture2 = await prisma.content.create({
+            data: {
+                title: `Lecture 2: Core Concepts in ${course.code}`,
+                type: "VIDEO",
+                url: sampleVideos[(i + 1) % sampleVideos.length],
+                duration: 50,
+                order: 1,
+                moduleId: mod2.id,
+            },
+        });
+        const reading2 = await prisma.content.create({
+            data: {
+                title: "Recommended Reading & Reference Slides",
+                type: "DOCUMENT",
+                url: sampleDocs[(i + 1) % sampleDocs.length],
+                duration: 0,
+                order: 2,
+                moduleId: mod2.id,
+            },
+        });
+
+        // Assessments — First Semester courses are already complete (past due
+        // dates); Second Semester courses are still ongoing (due dates ahead).
+        const isCompletedSemester = course.semester === "First";
         const quiz = await prisma.assessment.create({
             data: {
                 title: `Mid-Semester Quiz - ${course.code}`,
@@ -182,6 +362,8 @@ async function main() {
                 courseId: course.id,
                 totalMarks: 30,
                 passMark: 15,
+                duration: 30,
+                dueDate: isCompletedSemester ? daysAgo(45) : daysAgo(-21),
                 isPublished: true,
             },
         });
@@ -192,19 +374,25 @@ async function main() {
                 courseId: course.id,
                 totalMarks: 40,
                 passMark: 20,
+                dueDate: isCompletedSemester ? daysAgo(30) : daysAgo(-35),
                 isPublished: true,
             },
         });
 
         courseExtras[course.id] = {
-            contentIds: [lecture.id, reading.id],
+            contentIds: [lecture1.id, reading1.id, lecture2.id, reading2.id],
             quizId: quiz.id,
             assignmentId: assignment.id,
         };
     }
 
-    // 4. Students
-    console.log("Creating 40 Students...");
+    const coursesByLevel: Record<number, any[]> = {};
+    for (const course of courses) {
+        (coursesByLevel[course.level] ??= []).push(course);
+    }
+
+    // 4. Students (100, spread across all four levels)
+    console.log("Creating 100 Students...");
     const firstNames = [
         "Olumide",
         "Fatima",
@@ -226,6 +414,16 @@ async function main() {
         "Yusuf",
         "Chioma",
         "Samuel",
+        "Ngozi",
+        "Chukwuemeka",
+        "Aisha",
+        "Segun",
+        "Amaka",
+        "Yakubu",
+        "Ronke",
+        "Uche",
+        "Halima",
+        "Godwin",
     ];
     const lastNames = [
         "Adeyemi",
@@ -248,88 +446,123 @@ async function main() {
         "Garba",
         "Nwachukwu",
         "Ojo",
+        "Bello",
+        "Chukwu",
+        "Sani",
+        "Uzoma",
+        "Fashola",
+        "Aliyu",
+        "Nnamdi",
+        "Okorie",
+        "Lawal",
+        "Umeh",
     ];
 
-    const students: any[] = [];
-    for (let i = 0; i < 40; i++) {
-        const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
-        // Only 200/300/400-level courses exist in the catalog — assigning a
-        // student to 100L would leave them with zero eligible courses and a
-        // permanently blank dashboard, so we don't generate that level.
-        const levelCode = [200, 300, 400][i % 3];
+    // Admission year (2-digit) per current level — higher levels were
+    // admitted earlier, e.g. a 400L student's matric year predates a
+    // freshly-admitted 100L student's.
+    const admissionYearByLevel: Record<number, string> = {
+        100: "25",
+        200: "24",
+        300: "23",
+        400: "22",
+    };
 
-        const student = await prisma.user.create({
-            data: {
-                email: `stu${i}@adun.edu.ng`,
-                password: hashedPassword,
-                firstName: fn,
-                lastName: ln,
-                role: "STUDENT",
-                department,
-                level: levelCode,
-                matricNumber: `SWE/${levelCode}/${1000 + i}`,
-                isActive: true,
-            },
-        });
-        students.push(student);
+    // Three academic sessions: two fully completed, one current (in progress,
+    // Second Semester). A student's course history is derived from how many
+    // of these sessions they've been enrolled for — a 400L student has been
+    // around for all 3 (200L → 300L → 400L); a fresh 100L student has only
+    // this one.
+    const SESSIONS = ["2023/2024", "2024/2025", "2025/2026"];
+    const CURRENT_SESSION = SESSIONS[SESSIONS.length - 1];
+
+    function sessionHistoryForLevel(currentLevel: number) {
+        const historyDepth = currentLevel === 100 ? 1 : currentLevel === 200 ? 2 : 3;
+        const startIdx = SESSIONS.length - historyDepth;
+        const pairs: { session: string; level: number; isCurrent: boolean }[] = [];
+        for (let i = startIdx; i < SESSIONS.length; i++) {
+            const stepsFromCurrent = SESSIONS.length - 1 - i;
+            pairs.push({
+                session: SESSIONS[i],
+                level: currentLevel - stepsFromCurrent * 100,
+                isCurrent: i === SESSIONS.length - 1,
+            });
+        }
+        return pairs;
     }
 
-    // 5. Enrollments + First Semester Grades (completed) + Second Semester ongoing
-    console.log("Creating Enrollments, Assessments, Submissions, Grades & Progress...");
+    const currentLevels = [100, 200, 300, 400];
+    const studentsPerLevel = 25;
+
+    const students: any[] = [];
+    let studentIndex = 0;
+    for (const level of currentLevels) {
+        for (let j = 0; j < studentsPerLevel; j++) {
+            const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const matricNumber = `ADUN/FS/SEN/${admissionYearByLevel[level]}/${String(studentIndex + 1).padStart(3, "0")}`;
+
+            const student = await prisma.user.create({
+                data: {
+                    email: `stu${studentIndex}@adun.edu.ng`,
+                    password: hashedPassword,
+                    firstName: fn,
+                    lastName: ln,
+                    role: "STUDENT",
+                    department,
+                    level,
+                    matricNumber,
+                    isActive: true,
+                },
+            });
+            students.push({ ...student, ability: studentAbility() });
+            studentIndex++;
+        }
+    }
+
+    // 5. Enrollments (current session only) + full multi-session grade history
+    console.log("Creating Enrollments & Multi-Session Grade History...");
     const enrollmentsData: any[] = [];
     const gradesData: any[] = [];
 
     for (const student of students) {
-        const eligibleCourses = courses.filter((c) => c.level <= student.level!);
-        const selectedCourses = eligibleCourses.sort(() => 0.5 - Math.random()).slice(0, 5);
+        const history = sessionHistoryForLevel(student.level!);
 
-        for (const course of selectedCourses) {
-            // Enrollment
-            enrollmentsData.push({
-                userId: student.id,
-                courseId: course.id,
-                progress: Math.floor(Math.random() * 100),
-            });
+        for (const pair of history) {
+            const levelCourses = coursesByLevel[pair.level] || [];
 
-            // If First Semester course → fully graded
-            if (course.semester === "First") {
-                const total = Math.floor(Math.random() * 35) + 65; // 65-99
-                let gradeLetter = "F";
-                let gp = 0;
-                if (total >= 70) {
-                    gradeLetter = "A";
-                    gp = 5;
-                } else if (total >= 60) {
-                    gradeLetter = "B";
-                    gp = 4;
-                } else if (total >= 50) {
-                    gradeLetter = "C";
-                    gp = 3;
-                } else if (total >= 45) {
-                    gradeLetter = "D";
-                    gp = 2;
-                } else if (total >= 40) {
-                    gradeLetter = "E";
-                    gp = 1;
+            if (pair.isCurrent) {
+                // Current session: enroll in every course at their level. First
+                // Semester courses are already graded; Second Semester is
+                // still ongoing (handled via submissions/content-progress below).
+                for (const course of levelCourses) {
+                    enrollmentsData.push({
+                        userId: student.id,
+                        courseId: course.id,
+                        progress: randomInt(20, 90),
+                    });
+
+                    if (course.semester === "First") {
+                        gradesData.push({
+                            userId: student.id,
+                            courseId: course.id,
+                            ...generateGrade(student.ability),
+                            semester: "First",
+                            session: pair.session,
+                        });
+                    }
                 }
-
-                gradesData.push({
-                    userId: student.id,
-                    courseId: course.id,
-                    ca1: Math.floor(Math.random() * 30) + 15,
-                    ca2: Math.floor(Math.random() * 40) + 20,
-                    exam: Math.floor(Math.random() * 60) + 25,
-                    total,
-                    grade: gradeLetter,
-                    gradePoint: gp,
-                    semester: "First",
-                    session: "2025/2026",
-                });
-            }
-            // Second Semester → ongoing (some submissions only)
-            else {
-                // We'll leave some grades empty for second semester (current)
+            } else {
+                // Past session: fully graded, both semesters.
+                for (const course of levelCourses) {
+                    gradesData.push({
+                        userId: student.id,
+                        courseId: course.id,
+                        ...generateGrade(student.ability),
+                        semester: course.semester,
+                        session: pair.session,
+                    });
+                }
             }
         }
     }
@@ -344,16 +577,6 @@ async function main() {
     const courseEnrolledStudents: Record<string, string[]> = {};
     for (const e of enrollmentsData) {
         (courseEnrolledStudents[e.courseId] ??= []).push(e.userId);
-    }
-
-    function daysAgo(days: number) {
-        const d = new Date();
-        d.setDate(d.getDate() - days);
-        return d;
-    }
-
-    function randomInt(min: number, max: number) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     // 7. Quiz questions, submissions, answers & content progress — this is what
@@ -547,10 +770,8 @@ async function main() {
     }
     await prisma.activityLog.createMany({ data: activityData });
 
-    // Cover most courses with discussion activity, keep seed runtime reasonable
-    const forumSeedCourses = courses.slice(0, 6);
-
-    for (const course of forumSeedCourses) {
+    // Forum discussions across the whole catalog
+    for (const course of courses) {
         const instructor = lecturers.find((l) => l.id === course.instructorId)!;
         const enrolled = courseEnrolledStudents[course.id] || [];
         if (enrolled.length === 0) continue;
@@ -633,9 +854,14 @@ async function main() {
     }
 
     console.log("✅ Seeding completed successfully!");
-    console.log("→ First semester courses are fully graded");
-    console.log("→ Second semester courses have enrollments and partial data");
-    console.log("→ Modules, content, assessments, and forum are populated");
+    console.log(
+        `→ ${students.length} students, ${lecturers.length} lecturers, ${courses.length} courses`
+    );
+    console.log(
+        `→ 3 academic sessions tracked: ${SESSIONS.join(", ")} (current: ${CURRENT_SESSION})`
+    );
+    console.log("→ Students carry multi-session grade history matching their current level");
+    console.log("→ First semester of the current session is graded; Second semester is ongoing");
 }
 
 main()

@@ -28,6 +28,8 @@ export async function GET(req: Request) {
                 role: true,
                 department: true,
                 level: true,
+                matricNumber: true,
+                staffId: true,
                 isActive: true,
                 createdAt: true,
             },
@@ -56,6 +58,24 @@ export async function POST(req: Request) {
             return apiError(409, "A user with this email already exists");
         }
 
+        if (parsed.matricNumber) {
+            const existingMatric = await prisma.user.findUnique({
+                where: { matricNumber: parsed.matricNumber },
+            });
+            if (existingMatric) {
+                return apiError(409, "A user with this matric number already exists");
+            }
+        }
+
+        if (parsed.staffId) {
+            const existingStaff = await prisma.user.findUnique({
+                where: { staffId: parsed.staffId },
+            });
+            if (existingStaff) {
+                return apiError(409, "A user with this staff ID already exists");
+            }
+        }
+
         const tempPassword = crypto.randomBytes(9).toString("base64url");
         const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
@@ -67,8 +87,8 @@ export async function POST(req: Request) {
                 password: hashedPassword,
                 role: parsed.role,
                 level: parsed.level,
-                matricNumber: parsed.matricNumber,
-                staffId: parsed.staffId,
+                matricNumber: parsed.matricNumber || undefined,
+                staffId: parsed.staffId || undefined,
             },
             select: {
                 id: true,
@@ -78,6 +98,8 @@ export async function POST(req: Request) {
                 role: true,
                 department: true,
                 level: true,
+                matricNumber: true,
+                staffId: true,
                 isActive: true,
                 createdAt: true,
             },

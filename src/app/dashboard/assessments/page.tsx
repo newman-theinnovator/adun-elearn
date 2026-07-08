@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAssessments, useSubmitAssessment } from "@/hooks/useAssessments";
-import { ClipboardList, Clock, CheckCircle2, ChevronRight } from "lucide-react";
+import { ClipboardList, Clock, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,51 @@ export default function AssessmentsPage() {
     const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number | string>>({});
     const [quizSubmitted, setQuizSubmitted] = useState(false);
+
+    // Assignment file upload — real files go to Supabase storage via /api/upload,
+    // then the resulting URL is attached to the submission.
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const handleUploadClick = (assessmentId: string) => {
+        setUploadTargetId(assessmentId);
+        setUploadError(null);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        const assessmentId = uploadTargetId;
+        e.target.value = ""; // allow re-selecting the same file later
+        if (!file || !assessmentId) return;
+
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+            if (!uploadRes.ok) {
+                const err = await uploadRes.json();
+                throw new Error(err.message || "Upload failed");
+            }
+            const { url } = await uploadRes.json();
+
+            submitAssessment(
+                { id: assessmentId, submission: { fileUrl: url } },
+                {
+                    onError: (err: Error) => setUploadError(err.message),
+                }
+            );
+        } catch (err: any) {
+            setUploadError(err.message || "Upload failed");
+        } finally {
+            setUploading(false);
+            setUploadTargetId(null);
+        }
+    };
 
     if (isLoading || !assessments) {
         return (
@@ -80,7 +125,7 @@ export default function AssessmentsPage() {
                             </h2>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                 {activeQuiz.course?.code} • {activeQuiz.totalMarks} points •{" "}
-                                {activeQuiz.timeLimit} minutes
+                                {activeQuiz.duration} minutes
                             </p>
                         </div>
                         <button
@@ -208,6 +253,13 @@ export default function AssessmentsPage() {
     // ------------------------------------------------------------------------
     return (
         <div className="mx-auto max-w-5xl space-y-6">
+            <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelected}
+                aria-label="Upload assignment file"
+            />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold dark:text-white">Assessments</h1>
@@ -221,6 +273,12 @@ export default function AssessmentsPage() {
                     </button>
                 )}
             </div>
+
+            {uploadError && (
+                <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {uploadError}
+                </p>
+            )}
 
             {/* Filter Pills */}
             <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2">
@@ -303,14 +361,18 @@ export default function AssessmentsPage() {
                                             <span className="rounded-md border border-gray-200 px-2 py-0.5 dark:border-gray-600">
                                                 {a.totalMarks} marks
                                             </span>
-                                            {a.timeLimit && (
+                                            {a.duration && (
                                                 <span className="flex items-center gap-1 rounded-md border border-gray-200 px-2 py-0.5 dark:border-gray-600">
-                                                    <Clock className="h-3 w-3" /> {a.timeLimit} min
+                                                    <Clock className="h-3 w-3" /> {a.duration} min
                                                 </span>
                                             )}
                                             <span className="flex items-center gap-1 rounded-md border border-red-100 px-2 py-0.5 text-red-600 dark:border-red-900/30 dark:text-red-400">
                                                 <Clock className="h-3 w-3" /> Due{" "}
-                                                {new Date(a.dueDate).toLocaleDateString("en-NG")}
+                                                {a.dueDate
+                                                    ? new Date(a.dueDate).toLocaleDateString(
+                                                          "en-NG"
+                                                      )
+                                                    : "Not set"}
                                             </span>
                                         </div>
 
@@ -362,8 +424,19 @@ export default function AssessmentsPage() {
                                             a.isPublished &&
                                             user?.role === "STUDENT" &&
                                             !sub && (
-                                                <button className="bg-navy-800 hover:bg-navy-700 w-full rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto">
-                                                    Upload Work
+                                                <button
+                                                    onClick={() => handleUploadClick(a.id)}
+                                                    disabled={uploading && uploadTargetId === a.id}
+                                                    className="bg-navy-800 hover:bg-navy-700 flex w-full items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 sm:w-auto"
+                                                >
+                                                    {uploading && uploadTargetId === a.id ? (
+                                                        <>
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                            Uploading…
+                                                        </>
+                                                    ) : (
+                                                        "Upload Work"
+                                                    )}
                                                 </button>
                                             )}
                                         {user?.role !== "STUDENT" && (

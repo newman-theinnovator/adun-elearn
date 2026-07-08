@@ -39,11 +39,11 @@ Accounts are **admin-provisioned only** — there is no public self-registration
 
 **Demo credentials** (after seeding — see below), all using password `password123`:
 
-| Role     | Email                                                             |
-| -------- | ----------------------------------------------------------------- |
-| Admin    | `admin@adun.edu.ng`                                               |
-| Lecturer | `n.eze@adun.edu.ng`, `c.okoro@adun.edu.ng`, `a.bello@adun.edu.ng` |
-| Student  | `stu0@adun.edu.ng` through `stu39@adun.edu.ng`                    |
+| Role     | Email                                                                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin    | `admin@adun.edu.ng`                                                                                                                                                                           |
+| Lecturer | `n.eze@adun.edu.ng`, `c.okoro@adun.edu.ng`, `a.bello@adun.edu.ng`, `m.suleiman@adun.edu.ng`, `f.okonkwo@adun.edu.ng`, `e.igwe@adun.edu.ng`, `h.abubakar@adun.edu.ng`, `t.adewale@adun.edu.ng` |
+| Student  | `stu0@adun.edu.ng` through `stu99@adun.edu.ng` (25 each at 100L/200L/300L/400L)                                                                                                               |
 
 ---
 
@@ -97,7 +97,7 @@ Accounts are **admin-provisioned only** — there is no public self-registration
 npx prisma db seed
 ```
 
-`prisma/seed.ts` **deletes all existing data and regenerates it from scratch** — 1 admin, 3 lecturers, 8 courses across 200/300/400 level, 40 students, enrollments, grades (First Semester fully graded, Second Semester ongoing with a realistic mix of graded/pending/not-yet-submitted work), quiz questions and answers, content-progress and login-activity history, and forum discussions per course. Re-run it any time you want a fresh, consistent dataset for a demo.
+`prisma/seed.ts` **deletes all existing data and regenerates it from scratch** — 1 admin, 8 lecturers, 16 courses across 100/200/300/400 level, 100 students, and three academic sessions (`2023/2024`, `2024/2025`, `2025/2026`). Each student's grade history matches how long they've been enrolled — a 400L student has records from 200L and 300L, a 300L student from 100L and 200L, a 200L student from 100L, and a 100L student only has the current session. The current session (`2025/2026`) has First Semester fully graded and Second Semester ongoing (a realistic mix of graded/pending/not-yet-submitted work). Grades follow a bell-shaped distribution — each student has a consistent underlying "ability" so most land in the average B/C range with only a few consistent high performers, rather than uniformly random scores. Also seeds quiz questions and answers, content-progress and login-activity history, and forum discussions per course. Re-run it any time you want a fresh, consistent dataset for a demo.
 
 ---
 

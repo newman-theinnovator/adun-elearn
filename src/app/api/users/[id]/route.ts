@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { userUpdateSchema } from "@/lib/validators";
 import * as z from "zod";
-import { apiSuccess, apiError, validationError } from "@/lib/api-response";
+import { apiSuccess, apiError, notFound, validationError } from "@/lib/api-response";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -12,14 +12,44 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     try {
         const body = await req.json();
-        const { role, isActive } = userUpdateSchema.parse(body);
+        const parsed = userUpdateSchema.parse(body);
         const { id } = await params;
+
+        const existing = await prisma.user.findUnique({ where: { id } });
+        if (!existing) return notFound("User not found");
+
+        if (parsed.email && parsed.email !== existing.email) {
+            const emailTaken = await prisma.user.findUnique({ where: { email: parsed.email } });
+            if (emailTaken) return apiError(409, "A user with this email already exists");
+        }
+
+        if (parsed.matricNumber && parsed.matricNumber !== existing.matricNumber) {
+            const matricTaken = await prisma.user.findUnique({
+                where: { matricNumber: parsed.matricNumber },
+            });
+            if (matricTaken) return apiError(409, "A user with this matric number already exists");
+        }
+
+        if (parsed.staffId && parsed.staffId !== existing.staffId) {
+            const staffIdTaken = await prisma.user.findUnique({
+                where: { staffId: parsed.staffId },
+            });
+            if (staffIdTaken) return apiError(409, "A user with this staff ID already exists");
+        }
 
         const updatedUser = await prisma.user.update({
             where: { id },
             data: {
-                ...(role && { role }),
-                ...(isActive !== undefined && { isActive }),
+                ...(parsed.firstName && { firstName: parsed.firstName }),
+                ...(parsed.lastName && { lastName: parsed.lastName }),
+                ...(parsed.email && { email: parsed.email }),
+                ...(parsed.role && { role: parsed.role }),
+                ...(parsed.isActive !== undefined && { isActive: parsed.isActive }),
+                ...(parsed.level !== undefined && { level: parsed.level }),
+                ...(parsed.matricNumber !== undefined && {
+                    matricNumber: parsed.matricNumber || null,
+                }),
+                ...(parsed.staffId !== undefined && { staffId: parsed.staffId || null }),
             },
             select: {
                 id: true,
@@ -27,6 +57,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 firstName: true,
                 lastName: true,
                 role: true,
+                department: true,
+                level: true,
+                matricNumber: true,
+                staffId: true,
                 isActive: true,
             },
         });

@@ -68,6 +68,34 @@ export async function POST(req: Request) {
             },
         });
 
+        // Notify everyone with a stake in the course — enrolled students, the
+        // course's lecturer, and admins — so a new discussion doesn't go unseen.
+        const [course, admins] = await Promise.all([
+            prisma.course.findUnique({
+                where: { id: parsed.courseId },
+                select: { instructorId: true, enrollments: { select: { userId: true } } },
+            }),
+            prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } }),
+        ]);
+
+        const recipientIds = new Set<string>(admins.map((a) => a.id));
+        if (course) {
+            course.enrollments.forEach((e) => recipientIds.add(e.userId));
+            recipientIds.add(course.instructorId);
+        }
+        recipientIds.delete(session.user.id);
+
+        if (recipientIds.size > 0) {
+            await prisma.notification.createMany({
+                data: Array.from(recipientIds).map((userId) => ({
+                    userId,
+                    title: "New discussion posted",
+                    message: `${session.user.firstName} started "${post.title}"`,
+                    link: "/dashboard/forum",
+                })),
+            });
+        }
+
         return apiSuccess(post, 201);
     } catch (error) {
         if (error instanceof z.ZodError) {

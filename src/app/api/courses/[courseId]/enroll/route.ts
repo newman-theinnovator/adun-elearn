@@ -14,6 +14,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ course
         const course = await prisma.course.findUnique({ where: { id: courseId } });
         if (!course) return notFound("Course not found");
 
+        // Students can enroll in their current level or below (e.g. a
+        // carryover/backlog course), but never a course above their level.
+        const student = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { level: true },
+        });
+        if (!student?.level || course.level > student.level) {
+            return forbidden("You are not eligible to enroll in this course at your level");
+        }
+
         const existingEnrollment = await prisma.enrollment.findUnique({
             where: {
                 userId_courseId: {

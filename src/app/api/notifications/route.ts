@@ -7,12 +7,15 @@ export async function GET(_req: Request) {
     if (!session) return unauthorized();
 
     try {
+        // Fetch the most recent 50 (newest first, bounded), then reverse so the
+        // panel reads oldest-to-newest like a conversation feed.
         const notifications = await prisma.notification.findMany({
             where: { userId: session.user.id },
-            orderBy: [{ isRead: "asc" }, { createdAt: "desc" }],
+            orderBy: { createdAt: "desc" },
+            take: 50,
         });
 
-        return apiSuccess(notifications);
+        return apiSuccess(notifications.reverse());
     } catch (error) {
         console.error("Error fetching notifications:", error);
         return apiError(500, "Internal server error");
