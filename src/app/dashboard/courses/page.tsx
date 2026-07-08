@@ -65,7 +65,7 @@ export default function CoursesPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div>
                     <h1 className="text-xl font-bold sm:text-2xl dark:text-white">
-                        {user?.role === "STUDENT" ? "My Courses" : "Course Management"}
+                        {user?.role === "ADMIN" ? "Course Management" : "My Courses"}
                     </h1>
                     <p className="text-xs text-gray-500 sm:text-sm dark:text-gray-400">
                         {filtered.length} courses available

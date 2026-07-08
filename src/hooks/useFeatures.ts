@@ -195,3 +195,18 @@ export function useNotifications() {
         },
     });
 }
+
+export function useMarkNotificationRead() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`/api/notifications/${id}/read`, { method: "PUT" });
+            if (!res.ok) throw new Error("Failed to mark notification as read");
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        },
+    });
+}

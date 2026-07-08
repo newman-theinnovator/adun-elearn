@@ -31,6 +31,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ courseI
             return forbidden("Course unavailable");
         }
 
+        // Students can't view a course above their level either — otherwise
+        // the level restriction on the course list could be bypassed by
+        // navigating straight to a course's URL.
+        if (session.user.role === "STUDENT") {
+            const student = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                select: { level: true },
+            });
+            if (!student?.level || course.level > student.level) {
+                return forbidden("Course unavailable at your level");
+            }
+        }
+
         // Attach an 'isEnrolled' boolean derived from the relation if the user is a student
         const responseData = { ...course, isEnrolled: course.enrollments?.length > 0 };
 

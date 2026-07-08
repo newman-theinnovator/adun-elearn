@@ -17,17 +17,41 @@ export async function GET(req: Request) {
 
     try {
         const isStudent = session.user.role === "STUDENT";
+        const isLecturer = session.user.role === "LECTURER";
 
-        // Students only see published courses. Lecturers see all, Admins see all.
         const where: any = {};
-        if (isStudent) where.isPublished = true;
+
+        if (isStudent) {
+            // Students only see published courses at or below their own
+            // level — mirrors the enrollment-level restriction, so students
+            // can't even browse courses they're not eligible to take.
+            where.isPublished = true;
+            const student = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                select: { level: true },
+            });
+            where.level = { lte: student?.level ?? 0 };
+        }
+
+        if (isLecturer) {
+            // Lecturers only see courses they're assigned to teach.
+            where.instructorId = session.user.id;
+        }
+
         if (q) {
             where.OR = [
                 { title: { contains: q, mode: "insensitive" } },
                 { code: { contains: q, mode: "insensitive" } },
             ];
         }
-        if (level) where.level = parseInt(level, 10);
+        if (level) {
+            const requestedLevel = parseInt(level, 10);
+            // For students, an explicit ?level= filter can only narrow their
+            // eligible range further, never bypass the cap above.
+            where.level = isStudent
+                ? { lte: Math.min(requestedLevel, where.level.lte) }
+                : requestedLevel;
+        }
         if (semester) where.semester = semester;
 
         const courses = await prisma.course.findMany({
