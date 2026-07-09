@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { forumPostSchema } from "@/lib/validators";
 import * as z from "zod";
-import { apiSuccess, unauthorized, validationError, apiError } from "@/lib/api-response";
+import { apiSuccess, unauthorized, forbidden, validationError, apiError } from "@/lib/api-response";
 
 export async function GET(req: Request) {
     const session = await auth();
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
                 author: {
                     select: { firstName: true, lastName: true, role: true, profileImage: true },
                 },
-                course: { select: { code: true } },
+                course: { select: { code: true, semester: true } },
                 _count: { select: { replies: true } },
             },
             orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
@@ -49,6 +49,17 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const parsed = forumPostSchema.parse(body);
+
+        // Completed-semester courses are archived — no new discussions there.
+        const targetCourse = await prisma.course.findUnique({
+            where: { id: parsed.courseId },
+            select: { semester: true },
+        });
+        if (targetCourse?.semester === "First") {
+            return forbidden(
+                "This course's discussions are archived and no longer accept new posts"
+            );
+        }
 
         const post = await prisma.forumPost.create({
             data: {

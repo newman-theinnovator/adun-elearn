@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { apiSuccess, unauthorized, notFound, apiError } from "@/lib/api-response";
+import { apiSuccess, unauthorized, forbidden, notFound, apiError } from "@/lib/api-response";
 
 /** Increments a forum reply's like counter. No per-user tracking — a simple engagement signal. */
 export async function PUT(_req: Request, { params }: { params: Promise<{ replyId: string }> }) {
@@ -10,8 +10,16 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ replyId
     try {
         const { replyId } = await params;
 
-        const reply = await prisma.forumReply.findUnique({ where: { id: replyId } });
+        const reply = await prisma.forumReply.findUnique({
+            where: { id: replyId },
+            include: { post: { include: { course: { select: { semester: true } } } } },
+        });
         if (!reply) return notFound("Reply not found");
+
+        // Discussions tied to a completed semester are archived — read-only.
+        if (reply.post.course.semester === "First") {
+            return forbidden("This discussion is archived and no longer accepts likes");
+        }
 
         const updated = await prisma.forumReply.update({
             where: { id: replyId },
