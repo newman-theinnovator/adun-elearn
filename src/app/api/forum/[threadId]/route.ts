@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ threadI
                 author: {
                     select: { firstName: true, lastName: true, role: true, profileImage: true },
                 },
-                course: { select: { code: true, semester: true } },
+                course: { select: { code: true, semester: true, instructorId: true } },
                 replies: {
                     include: {
                         author: {
@@ -42,6 +42,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ threadI
         });
 
         if (!post) return notFound("Thread not found");
+
+        // A lecturer may only view discussions in courses they teach.
+        if (session.user.role === "LECTURER" && post.course.instructorId !== session.user.id) {
+            return forbidden("You do not teach this course");
+        }
 
         return apiSuccess(post);
     } catch (error) {
@@ -61,9 +66,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ threadI
 
         const post = await prisma.forumPost.findUnique({
             where: { id: threadId },
-            include: { course: { select: { semester: true } } },
+            include: { course: { select: { semester: true, instructorId: true } } },
         });
         if (!post) return notFound("Thread not found");
+
+        // A lecturer may only reply in courses they teach.
+        if (session.user.role === "LECTURER" && post.course.instructorId !== session.user.id) {
+            return forbidden("You do not teach this course");
+        }
 
         // Discussions tied to a completed semester are archived — read-only.
         if (post.course.semester === "First") {

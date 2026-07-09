@@ -12,9 +12,14 @@ export async function PUT(_req: Request, { params }: { params: Promise<{ threadI
 
         const post = await prisma.forumPost.findUnique({
             where: { id: threadId },
-            include: { course: { select: { semester: true } } },
+            include: { course: { select: { semester: true, instructorId: true } } },
         });
         if (!post) return notFound("Thread not found");
+
+        // A lecturer may only interact with courses they teach.
+        if (session.user.role === "LECTURER" && post.course.instructorId !== session.user.id) {
+            return forbidden("You do not teach this course");
+        }
 
         // Discussions tied to a completed semester are archived — read-only.
         if (post.course.semester === "First") {
