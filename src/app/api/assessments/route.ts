@@ -55,6 +55,10 @@ export async function GET(_req: Request) {
                 include: {
                     course: { select: { code: true, title: true } },
                     questions: { orderBy: { order: "asc" } },
+                    // Lightweight status-only list (not the full submission
+                    // payload) so the frontend can bucket each assessment as
+                    // Active/Closed/Graded without a separate request.
+                    submissions: { select: { status: true } },
                     _count: { select: { submissions: true } },
                 },
                 orderBy: { createdAt: "desc" },

@@ -7,6 +7,7 @@ import { apiSuccess, forbidden, notFound, apiError, validationError } from "@/li
 const SubmissionStatus = {
     SUBMITTED: "SUBMITTED",
     GRADED: "GRADED",
+    LATE: "LATE",
 } as const;
 
 const AssessmentType = {
@@ -78,8 +79,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             needsManualGrading = true;
         }
 
+        // A submission made after the due date is still accepted (real
+        // students submit late), but flagged distinctly so lecturers can see
+        // it was late and students see an honest "submitted late" state
+        // instead of a normal "awaiting grade" one. Auto-graded quizzes
+        // still get a real score either way — lateness is a policy concern
+        // for the lecturer to factor in manually, not a grading gate.
+        const isLate = assessment.dueDate ? new Date() > assessment.dueDate : false;
         const submissionStatus = needsManualGrading
-            ? SubmissionStatus.SUBMITTED
+            ? isLate
+                ? SubmissionStatus.LATE
+                : SubmissionStatus.SUBMITTED
             : SubmissionStatus.GRADED;
 
         const submission = await prisma.submission.create({

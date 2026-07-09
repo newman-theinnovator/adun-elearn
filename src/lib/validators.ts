@@ -103,3 +103,8 @@ export const assessmentSubmitSchema = z.object({
     answers: z.record(z.string(), z.string()).optional(),
     fileUrl: z.string().nullable().optional(),
 });
+
+export const submissionGradeSchema = z.object({
+    score: z.number().min(0, { message: "Score cannot be negative" }),
+    feedback: z.string().optional(),
+});
