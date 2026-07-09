@@ -387,14 +387,18 @@ export default function CourseDetailPage() {
                         <div className="space-y-4">
                             <div className="mb-4 flex items-center justify-between">
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                    Join the course conversation
+                                    {course.semester === "First"
+                                        ? "🔒 Archived — this semester's discussions are closed"
+                                        : "Join the course conversation"}
                                 </p>
-                                <button
-                                    onClick={() => setShowNewThread(true)}
-                                    className="scale-active-95 bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-md transition-all"
-                                >
-                                    <MessageSquare className="h-4 w-4" /> New Thread
-                                </button>
+                                {course.semester !== "First" && (
+                                    <button
+                                        onClick={() => setShowNewThread(true)}
+                                        className="scale-active-95 bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-md transition-all"
+                                    >
+                                        <MessageSquare className="h-4 w-4" /> New Thread
+                                    </button>
+                                )}
                             </div>
 
                             {forumLoading ? (

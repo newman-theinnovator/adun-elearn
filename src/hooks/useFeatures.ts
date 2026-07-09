@@ -9,11 +9,13 @@ export interface ForumPost {
     isPinned: boolean;
     likes: number;
     courseId: string;
+    course?: { code: string; semester: string };
     _count: { replies: number };
 }
 
 export interface ForumThread extends ForumPost {
     authorId: string;
+    course: { code: string; semester: string };
     replies: {
         id: string;
         authorId: string;

@@ -30,7 +30,13 @@ export function NewPostModal({
     const { mutate: createPost, isPending } = useCreatePost();
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
-    const [courseId, setCourseId] = useState(defaultCourseId !== "all" ? defaultCourseId : "");
+
+    // Completed-semester courses are archived — no new discussions there.
+    const availableCourses = (courses || []).filter((c: any) => c.semester !== "First");
+    const isDefaultArchived = !availableCourses.some((c: any) => c.id === defaultCourseId);
+    const [courseId, setCourseId] = useState(
+        defaultCourseId !== "all" && !isDefaultArchived ? defaultCourseId : ""
+    );
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,7 +83,7 @@ export function NewPostModal({
                                     <SelectValue placeholder="Select a course…" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(courses || []).map((c: any) => (
+                                    {availableCourses.map((c: any) => (
                                         <SelectItem key={c.id} value={c.id}>
                                             {c.code} — {c.title}
                                         </SelectItem>

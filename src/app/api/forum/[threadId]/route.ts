@@ -24,6 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ threadI
                 author: {
                     select: { firstName: true, lastName: true, role: true, profileImage: true },
                 },
+                course: { select: { code: true, semester: true } },
                 replies: {
                     include: {
                         author: {
@@ -58,8 +59,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ threadI
         const body = await req.json();
         const parsed = forumReplySchema.parse(body);
 
-        const post = await prisma.forumPost.findUnique({ where: { id: threadId } });
+        const post = await prisma.forumPost.findUnique({
+            where: { id: threadId },
+            include: { course: { select: { semester: true } } },
+        });
         if (!post) return notFound("Thread not found");
+
+        // Discussions tied to a completed semester are archived — read-only.
+        if (post.course.semester === "First") {
+            return forbidden("This discussion is archived and no longer accepts replies");
+        }
 
         const reply = await prisma.forumReply.create({
             data: {

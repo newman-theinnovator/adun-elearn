@@ -70,6 +70,11 @@ function ThreadModal({ threadId, onClose }: { threadId: string | null; onClose: 
         deletePost(threadId, { onSuccess: onClose });
     };
 
+    // Discussions tied to a completed semester are archived — read-only for
+    // everyone, moderation actions aside (deleting/pinning remains available
+    // to admins for cleanup, but likes and new replies are locked).
+    const isArchived = threadData.course.semester === "First";
+
     return (
         <Dialog open={!!threadId} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
@@ -119,6 +124,14 @@ function ThreadModal({ threadId, onClose }: { threadId: string | null; onClose: 
                                             📌 Pinned
                                         </Badge>
                                     )}
+                                    {isArchived && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+                                        >
+                                            🔒 Archived
+                                        </Badge>
+                                    )}
                                     <div className="ml-auto flex items-center gap-2">
                                         {(currentUser?.role === "LECTURER" ||
                                             currentUser?.role === "ADMIN") && (
@@ -153,12 +166,12 @@ function ThreadModal({ threadId, onClose }: { threadId: string | null; onClose: 
                                 <div className="mt-6 flex items-center gap-4 text-sm font-medium text-gray-500">
                                     <button
                                         onClick={() => {
-                                            if (likedPost) return;
+                                            if (likedPost || isArchived) return;
                                             setLikedPost(true);
                                             likePost(threadId);
                                         }}
-                                        disabled={likedPost}
-                                        className={`flex items-center gap-1.5 transition-colors ${likedPost ? "text-blue-600" : "hover:text-blue-600"}`}
+                                        disabled={likedPost || isArchived}
+                                        className={`flex items-center gap-1.5 transition-colors ${likedPost ? "text-blue-600" : isArchived ? "cursor-not-allowed opacity-50" : "hover:text-blue-600"}`}
                                     >
                                         <ThumbsUp className="h-4 w-4" /> {threadData.likes || 0}{" "}
                                         Likes
@@ -214,14 +227,15 @@ function ThreadModal({ threadId, onClose }: { threadId: string | null; onClose: 
                                             <div className="mt-3 flex items-center gap-4 text-xs font-medium tracking-wide text-gray-500">
                                                 <button
                                                     onClick={() => {
-                                                        if (likedReplies.has(r.id)) return;
+                                                        if (likedReplies.has(r.id) || isArchived)
+                                                            return;
                                                         setLikedReplies((prev) =>
                                                             new Set(prev).add(r.id)
                                                         );
                                                         likeReply({ replyId: r.id, threadId });
                                                     }}
-                                                    disabled={likedReplies.has(r.id)}
-                                                    className={`flex items-center gap-1 transition-colors ${likedReplies.has(r.id) ? "text-blue-600" : "hover:text-blue-600"}`}
+                                                    disabled={likedReplies.has(r.id) || isArchived}
+                                                    className={`flex items-center gap-1 transition-colors ${likedReplies.has(r.id) ? "text-blue-600" : isArchived ? "cursor-not-allowed opacity-50" : "hover:text-blue-600"}`}
                                                 >
                                                     <ThumbsUp className="h-3.5 w-3.5" />{" "}
                                                     {r.likes || 0} Like
@@ -254,35 +268,45 @@ function ThreadModal({ threadId, onClose }: { threadId: string | null; onClose: 
                                 </Card>
                             ))}
 
-                            <Card className="relative mt-6 rounded-xl p-4 sm:p-5">
-                                <div className="absolute top-8 -left-3 w-6 border-b-2 border-gray-100 sm:-left-[34px] dark:border-gray-700" />
-                                <label htmlFor="reply-body" className="sr-only">
-                                    Reply to this discussion
-                                </label>
-                                <textarea
-                                    id="reply-body"
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    className="w-full rounded-xl border border-gray-200 p-4 text-sm font-medium transition-all focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                    rows={3}
-                                    placeholder="Join the conversation..."
-                                />
-                                <div className="mt-3 flex justify-end">
-                                    <button
-                                        onClick={handleReply}
-                                        disabled={replying || !replyContent.trim()}
-                                        className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
-                                    >
-                                        {replying ? (
-                                            "Posting..."
-                                        ) : (
-                                            <>
-                                                <Send className="h-4 w-4" /> Post Reply
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </Card>
+                            {isArchived ? (
+                                <Card className="relative mt-6 rounded-xl p-4 text-center sm:p-5">
+                                    <div className="absolute top-8 -left-3 w-6 border-b-2 border-gray-100 sm:-left-[34px] dark:border-gray-700" />
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                        🔒 This discussion is from a previous semester and is now
+                                        archived — no new replies or likes.
+                                    </p>
+                                </Card>
+                            ) : (
+                                <Card className="relative mt-6 rounded-xl p-4 sm:p-5">
+                                    <div className="absolute top-8 -left-3 w-6 border-b-2 border-gray-100 sm:-left-[34px] dark:border-gray-700" />
+                                    <label htmlFor="reply-body" className="sr-only">
+                                        Reply to this discussion
+                                    </label>
+                                    <textarea
+                                        id="reply-body"
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-200 p-4 text-sm font-medium transition-all focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        rows={3}
+                                        placeholder="Join the conversation..."
+                                    />
+                                    <div className="mt-3 flex justify-end">
+                                        <button
+                                            onClick={handleReply}
+                                            disabled={replying || !replyContent.trim()}
+                                            className="bg-navy-800 hover:bg-navy-700 flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50"
+                                        >
+                                            {replying ? (
+                                                "Posting..."
+                                            ) : (
+                                                <>
+                                                    <Send className="h-4 w-4" /> Post Reply
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </Card>
+                            )}
                         </div>
                     </div>
                 </div>

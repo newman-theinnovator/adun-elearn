@@ -851,6 +851,129 @@ async function main() {
                 createdAt: daysAgo(isFirstSemester ? 39 : 4),
             },
         });
+
+        // Completed semesters get a fuller, wrapped-up conversation history —
+        // more back-and-forth on the existing threads plus a closing
+        // wrap-up post — so an archived discussion reads like a semester
+        // that actually happened, not a freshly-seeded stub.
+        if (isFirstSemester) {
+            await prisma.forumReply.createMany({
+                data: [
+                    {
+                        body: "Same here, excited for this course!",
+                        postId: announcement.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(88),
+                    },
+                    {
+                        body: "Will the office hours also cover project consultations, or strictly coursework questions?",
+                        postId: announcement.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 2),
+                        createdAt: daysAgo(85),
+                    },
+                    {
+                        body: "Both — feel free to bring project questions as well.",
+                        postId: announcement.id,
+                        authorId: instructor.id,
+                        likes: Math.floor(Math.random() * 4) + 1,
+                        createdAt: daysAgo(84),
+                    },
+                ],
+            });
+
+            await prisma.forumReply.createMany({
+                data: [
+                    {
+                        body: "Does the page count include diagrams and tables?",
+                        postId: question.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(57),
+                    },
+                    {
+                        body: "No, diagrams and tables are excluded from the 8-page minimum.",
+                        postId: question.id,
+                        authorId: instructor.id,
+                        likes: Math.floor(Math.random() * 5) + 1,
+                        createdAt: daysAgo(56),
+                    },
+                    {
+                        body: "Perfect, thank you for clarifying!",
+                        postId: question.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 2),
+                        createdAt: daysAgo(55),
+                    },
+                ],
+            });
+
+            await prisma.forumReply.createMany({
+                data: [
+                    {
+                        body: "I'm free most evenings — Saturday afternoon works too if that's better for others.",
+                        postId: studyThread.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(38),
+                    },
+                    {
+                        body: "Saturday afternoon works for me. Let's meet in the library study room.",
+                        postId: studyThread.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(37),
+                    },
+                    {
+                        body: "Thanks for organizing this — it really helped going into the exam.",
+                        postId: studyThread.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 4) + 1,
+                        createdAt: daysAgo(20),
+                    },
+                ],
+            });
+
+            // Closing wrap-up post from the lecturer, dated near the end of
+            // the semester, with a round of student thank-yous.
+            const wrapUp = await prisma.forumPost.create({
+                data: {
+                    title: `${course.code} — Semester wrap-up and final grades`,
+                    body: `That's a wrap on ${course.title} for this semester! Final grades have been posted to the gradebook. Thank you all for the engagement and thoughtful questions throughout — it made for a great semester. Best of luck in your next courses.`,
+                    courseId: course.id,
+                    authorId: instructor.id,
+                    isPinned: true,
+                    likes: Math.floor(Math.random() * 10) + 5,
+                    createdAt: daysAgo(3),
+                },
+            });
+            await prisma.forumReply.createMany({
+                data: [
+                    {
+                        body: "Thank you, sir! Really enjoyed this course.",
+                        postId: wrapUp.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 4),
+                        createdAt: daysAgo(3),
+                    },
+                    {
+                        body: "Appreciate all the help this semester, thank you!",
+                        postId: wrapUp.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(2),
+                    },
+                    {
+                        body: "Thanks for a great semester — looking forward to the next one.",
+                        postId: wrapUp.id,
+                        authorId: pickStudent(),
+                        likes: Math.floor(Math.random() * 3),
+                        createdAt: daysAgo(2),
+                    },
+                ],
+            });
+        }
     }
 
     console.log("✅ Seeding completed successfully!");
