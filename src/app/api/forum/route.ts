@@ -29,7 +29,7 @@ export async function GET(req: Request) {
                 author: {
                     select: { firstName: true, lastName: true, role: true, profileImage: true },
                 },
-                course: { select: { code: true } },
+                course: { select: { code: true, semester: true } },
                 _count: { select: { replies: true } },
             },
             orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],

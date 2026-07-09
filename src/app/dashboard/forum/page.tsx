@@ -370,64 +370,79 @@ export default function ForumPage() {
                             </button>
                         </Card>
                     ) : (
-                        forumPosts.map((p: any) => (
-                            <div
-                                key={p.id}
-                                onClick={() => setSelectedPost(p.id)}
-                                className={`group cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-6 dark:bg-gray-800 ${p.isPinned ? "border-amber-200 bg-amber-50/30 dark:border-amber-700/50 dark:bg-amber-900/10" : "border-gray-100 dark:border-gray-700"}`}
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div
-                                        className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ${p.author.role === "LECTURER" ? "bg-blue-500" : "bg-emerald-500"}`}
-                                    >
-                                        {p.author.firstName?.[0] || ""}
-                                        {p.author.lastName?.[0] || "U"}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                                            {p.isPinned && (
-                                                <Badge
-                                                    variant="warning"
-                                                    className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
-                                                >
-                                                    📌 Pinned
-                                                </Badge>
-                                            )}
-                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                                {p.author.firstName} {p.author.lastName}
-                                            </span>
-                                            <span className="text-[10px] text-gray-400">
-                                                •{" "}
-                                                {new Date(p.createdAt).toLocaleDateString("en-NG")}
-                                            </span>
-                                        </div>
-                                        <h3 className="mt-1 text-lg leading-tight font-bold transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                                            {p.title}
-                                        </h3>
-                                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                                            {p.body}
-                                        </p>
+                        forumPosts.map((p: any) => {
+                            // A discussion tied to a completed-semester course is
+                            // stale context — dim it the same way completed
+                            // courses are dimmed, so current-semester threads
+                            // stand out at a glance.
+                            const isCompleted = p.course?.semester === "First";
 
-                                        <div className="mt-4 flex items-center gap-5 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                            <span className="flex items-center gap-1.5 transition-colors group-hover:text-blue-500">
-                                                <MessageSquare className="h-4 w-4" />{" "}
-                                                {p._count?.replies || p.replies?.length || 0}{" "}
-                                                replies
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <ThumbsUp className="h-4 w-4" /> {p.likes || 0}{" "}
-                                                likes
-                                            </span>
-                                            {p.course && (
-                                                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                                    {p.course.code}
+                            return (
+                                <div
+                                    key={p.id}
+                                    onClick={() => setSelectedPost(p.id)}
+                                    className={`group cursor-pointer rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-6 dark:bg-gray-800 ${p.isPinned ? "border-amber-200 bg-amber-50/30 dark:border-amber-700/50 dark:bg-amber-900/10" : "border-gray-100 dark:border-gray-700"} ${isCompleted ? "opacity-60 hover:opacity-100" : ""}`}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div
+                                            className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ${p.author.role === "LECTURER" ? "bg-blue-500" : "bg-emerald-500"}`}
+                                        >
+                                            {p.author.firstName?.[0] || ""}
+                                            {p.author.lastName?.[0] || "U"}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                                {p.isPinned && (
+                                                    <Badge
+                                                        variant="warning"
+                                                        className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase"
+                                                    >
+                                                        📌 Pinned
+                                                    </Badge>
+                                                )}
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                    {p.author.firstName} {p.author.lastName}
                                                 </span>
-                                            )}
+                                                <span className="text-[10px] text-gray-400">
+                                                    •{" "}
+                                                    {new Date(p.createdAt).toLocaleDateString(
+                                                        "en-NG"
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <h3 className="mt-1 text-lg leading-tight font-bold transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+                                                {p.title}
+                                            </h3>
+                                            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+                                                {p.body}
+                                            </p>
+
+                                            <div className="mt-4 flex items-center gap-5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                                <span className="flex items-center gap-1.5 transition-colors group-hover:text-blue-500">
+                                                    <MessageSquare className="h-4 w-4" />{" "}
+                                                    {p._count?.replies || p.replies?.length || 0}{" "}
+                                                    replies
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <ThumbsUp className="h-4 w-4" /> {p.likes || 0}{" "}
+                                                    likes
+                                                </span>
+                                                {p.course && (
+                                                    <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                        {p.course.code}
+                                                    </span>
+                                                )}
+                                                {isCompleted && (
+                                                    <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                        Completed
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>
