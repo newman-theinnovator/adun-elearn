@@ -44,6 +44,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     firstName: user.firstName,
                     lastName: user.lastName,
                     role: user.role,
+                    level: user.level ?? undefined,
+                    matricNumber: user.matricNumber ?? undefined,
+                    staffId: user.staffId ?? undefined,
                 };
             },
         }),
@@ -55,6 +58,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.firstName = user.firstName;
                 token.lastName = user.lastName;
                 token.id = user.id;
+                token.level = user.level;
+                token.matricNumber = user.matricNumber;
+                token.staffId = user.staffId;
                 token.validatedAt = Date.now();
                 return token;
             }
@@ -69,7 +75,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (Date.now() - lastValidated > 60_000) {
                 const dbUser = await prisma.user.findUnique({
                     where: { id: token.id as string },
-                    select: { isActive: true, role: true, firstName: true, lastName: true },
+                    select: {
+                        isActive: true,
+                        role: true,
+                        firstName: true,
+                        lastName: true,
+                        level: true,
+                        matricNumber: true,
+                        staffId: true,
+                    },
                 });
                 if (!dbUser || !dbUser.isActive) {
                     return null;
@@ -77,6 +91,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.role = dbUser.role;
                 token.firstName = dbUser.firstName;
                 token.lastName = dbUser.lastName;
+                token.level = dbUser.level ?? undefined;
+                token.matricNumber = dbUser.matricNumber ?? undefined;
+                token.staffId = dbUser.staffId ?? undefined;
                 token.validatedAt = Date.now();
             }
             return token;
@@ -87,6 +104,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 session.user.firstName = token.firstName as string;
                 session.user.lastName = token.lastName as string;
                 session.user.id = token.id as string;
+                session.user.level = token.level as number | undefined;
+                session.user.matricNumber = token.matricNumber as string | undefined;
+                session.user.staffId = token.staffId as string | undefined;
             }
             return session;
         },

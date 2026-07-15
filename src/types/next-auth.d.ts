@@ -8,6 +8,7 @@ declare module "next-auth" {
         lastName?: string;
         matricNumber?: string;
         staffId?: string;
+        level?: number;
     }
 
     interface Session {
@@ -18,6 +19,7 @@ declare module "next-auth" {
             lastName?: string;
             matricNumber?: string;
             staffId?: string;
+            level?: number;
         };
     }
 }
@@ -28,5 +30,8 @@ declare module "next-auth/jwt" {
         role: string;
         firstName?: string;
         lastName?: string;
+        matricNumber?: string;
+        staffId?: string;
+        level?: number;
     }
 }

@@ -17,11 +17,21 @@ export async function GET(req: Request) {
 
         if (isSpecificCourse) {
             where.courseId = courseId;
+            // A lecturer can only view a specific course's discussions if they
+            // teach it — prevents bypassing the scoping below via the courseId
+            // query param for a course that isn't theirs.
+            if (session.user.role === "LECTURER") {
+                where.course = { instructorId: session.user.id };
+            }
         } else if (session.user.role === "STUDENT") {
             // Students see posts from courses they are enrolled in
             where.course = { enrollments: { some: { userId: session.user.id } } };
+        } else if (session.user.role === "LECTURER") {
+            // Lecturers only see discussions in courses they teach, not the
+            // whole department's forum activity.
+            where.course = { instructorId: session.user.id };
         }
-        // Admins and Lecturers see all posts when no specific course is selected
+        // Admins see all posts when no specific course is selected
 
         const posts = await prisma.forumPost.findMany({
             where,
